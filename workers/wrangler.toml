@@ -3,5 +3,5 @@ main = "rate-limiter.js"
 compatibility_date = "2026-10-08"
 
 kv_namespaces = [
-  { binding = "RATE_LIMIT_KV", id = "backed_rate_limit_kv_id" }
+  { binding = "RATE_LIMIT_KV", id = "5501c30eedb0417b813ff7e6e0690fa6" }
 ]

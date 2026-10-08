@@ -10,10 +10,20 @@
 import { supabase } from "./supabaseClient";
 
 /**
+ * Custom Event Dispatcher for Local Realtime Synchrony
+ */
+function dispatchLocalRealtimeEvent(channelName, payload) {
+  const event = new CustomEvent("backed-realtime-event", {
+    detail: { channel: channelName, payload, timestamp: new Date().toISOString() },
+  });
+  window.dispatchEvent(event);
+}
+
+/**
  * 1. Subscribe to Dashboard Home Live Activity Channel
  */
 export function subscribeToActivityChannel(profileId, onNewActivity) {
-  if (!profileId) return null;
+  if (!profileId) return () => {};
 
   const channel = supabase
     .channel(`profile:${profileId}:activity`)
@@ -45,14 +55,24 @@ export function subscribeToActivityChannel(profileId, onNewActivity) {
       console.log(`[Realtime Activity Channel] Status for ${profileId}:`, status);
     });
 
-  return channel;
+  const localHandler = (e) => {
+    if (e.detail?.channel === `profile:${profileId}:activity`) {
+      onNewActivity(e.detail.payload);
+    }
+  };
+  window.addEventListener("backed-realtime-event", localHandler);
+
+  return () => {
+    supabase.removeChannel(channel);
+    window.removeEventListener("backed-realtime-event", localHandler);
+  };
 }
 
 /**
  * 2. Subscribe to Proof Badge Status Updates Channel
  */
 export function subscribeToEvidenceChannel(profileId, onEvidenceStatusChange) {
-  if (!profileId) return null;
+  if (!profileId) return () => {};
 
   const channel = supabase
     .channel(`evidence:${profileId}`)
@@ -72,14 +92,24 @@ export function subscribeToEvidenceChannel(profileId, onEvidenceStatusChange) {
       console.log(`[Realtime Evidence Channel] Status for ${profileId}:`, status);
     });
 
-  return channel;
+  const localHandler = (e) => {
+    if (e.detail?.channel === `evidence:${profileId}`) {
+      onEvidenceStatusChange(e.detail.payload);
+    }
+  };
+  window.addEventListener("backed-realtime-event", localHandler);
+
+  return () => {
+    supabase.removeChannel(channel);
+    window.removeEventListener("backed-realtime-event", localHandler);
+  };
 }
 
 /**
  * 3. Subscribe to Inbox New Messages Channel
  */
 export function subscribeToInboxChannel(profileId, onNewMessage) {
-  if (!profileId) return null;
+  if (!profileId) return () => {};
 
   const channel = supabase
     .channel(`inbox:${profileId}`)
@@ -99,7 +129,17 @@ export function subscribeToInboxChannel(profileId, onNewMessage) {
       console.log(`[Realtime Inbox Channel] Status for ${profileId}:`, status);
     });
 
-  return channel;
+  const localHandler = (e) => {
+    if (e.detail?.channel === `inbox:${profileId}`) {
+      onNewMessage(e.detail.payload);
+    }
+  };
+  window.addEventListener("backed-realtime-event", localHandler);
+
+  return () => {
+    supabase.removeChannel(channel);
+    window.removeEventListener("backed-realtime-event", localHandler);
+  };
 }
 
 /**
@@ -123,5 +163,38 @@ export function subscribeToAdminReportsChannel(onNewReport) {
       console.log("[Realtime Admin Reports Channel] Status:", status);
     });
 
-  return channel;
+  const localHandler = (e) => {
+    if (e.detail?.channel === "admin:reports") {
+      onNewReport(e.detail.payload);
+    }
+  };
+  window.addEventListener("backed-realtime-event", localHandler);
+
+  return () => {
+    supabase.removeChannel(channel);
+    window.removeEventListener("backed-realtime-event", localHandler);
+  };
+}
+
+/**
+ * Real-time Event Broadcasters (Client-Initiated & Triggered)
+ */
+export function broadcastActivityEvent(profileId, activityData) {
+  dispatchLocalRealtimeEvent(`profile:${profileId}:activity`, activityData);
+}
+
+export function broadcastEvidenceStatusUpdate(profileId, evidenceData) {
+  dispatchLocalRealtimeEvent(`evidence:${profileId}`, evidenceData);
+}
+
+export function broadcastInboxMessage(profileId, messageData) {
+  dispatchLocalRealtimeEvent(`inbox:${profileId}`, messageData);
+  dispatchLocalRealtimeEvent(`profile:${profileId}:activity`, {
+    type: "message",
+    data: messageData,
+  });
+}
+
+export function broadcastAdminReport(reportData) {
+  dispatchLocalRealtimeEvent("admin:reports", reportData);
 }

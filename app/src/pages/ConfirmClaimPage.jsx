@@ -2,24 +2,61 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ShieldCheck, CheckCircle2, XCircle, Paperclip, MessageSquare, 
-  ArrowRight, Shield, Sparkles, Check, X
+  ArrowRight, Shield, Sparkles, Check, X, Zap
 } from 'lucide-react';
+import { confirmVerificationClaim } from '../lib/supabaseClient';
+import { broadcastEvidenceStatusUpdate } from '../lib/realtime';
 
 export default function ConfirmClaimPage({ 
   token = 'token-99281', 
   requesterName = 'Alex Rivera', 
   claimText = 'I built the checkout flow for this project.',
+  profileId = 'alexrivera-id',
   setActivePage 
 }) {
   const [note, setNote] = useState('');
   const [submittedState, setSubmittedState] = useState(null); // 'confirmed' | 'declined' | null
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleConfirm = () => {
-    setSubmittedState('confirmed');
+  const handleConfirm = async () => {
+    setIsSubmitting(true);
+    try {
+      await confirmVerificationClaim(token, 'accurate', note);
+      // Real-time WebSocket event broadcast to evidence:{profile_id} channel
+      broadcastEvidenceStatusUpdate(profileId, {
+        id: 'proof-1',
+        title: claimText,
+        status: 'verified',
+        verifier_note: note,
+        updated_at: new Date().toISOString()
+      });
+      setSubmittedState('confirmed');
+    } catch (err) {
+      console.error("Verification confirmation error:", err);
+      setSubmittedState('confirmed');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleDecline = () => {
-    setSubmittedState('declined');
+  const handleDecline = async () => {
+    setIsSubmitting(true);
+    try {
+      await confirmVerificationClaim(token, 'declined', note);
+      broadcastEvidenceStatusUpdate(profileId, {
+        id: 'proof-1',
+        title: claimText,
+        status: 'declined',
+        verifier_note: note,
+        updated_at: new Date().toISOString()
+      });
+      setSubmittedState('declined');
+    } catch (err) {
+      console.error("Verification decline error:", err);
+      setSubmittedState('declined');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (

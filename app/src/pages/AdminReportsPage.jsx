@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ShieldAlert, CheckCircle2, XCircle, AlertTriangle, Paperclip, 
-  Trash2, Bell, Shield, Eye, Check, RefreshCw 
+  Trash2, Bell, Shield, Eye, Check, RefreshCw, Zap
 } from 'lucide-react';
+import { subscribeToAdminReportsChannel } from '../lib/realtime';
 
 export default function AdminReportsPage({ setActivePage, onOpenEvidence }) {
   const [activeFilter, setActiveFilter] = useState('All');
+  const [liveToast, setLiveToast] = useState(null);
   const [reports, setReports] = useState([
     {
       id: 101,
@@ -34,6 +36,19 @@ export default function AdminReportsPage({ setActivePage, onOpenEvidence }) {
     }
   ]);
 
+  // Subscribe to real-time moderation reports channel
+  useEffect(() => {
+    const unsubscribe = subscribeToAdminReportsChannel((newReport) => {
+      setReports((prev) => [newReport, ...prev]);
+      setLiveToast(`New report filed for ${newReport.page || 'a public profile'}!`);
+      setTimeout(() => setLiveToast(null), 4000);
+    });
+
+    return () => {
+      if (typeof unsubscribe === 'function') unsubscribe();
+    };
+  }, []);
+
   const filteredReports = reports.filter((r) => {
     if (activeFilter === 'Pending') return r.status === 'Pending Review';
     if (activeFilter === 'Warned') return r.status === 'Warned';
@@ -58,6 +73,24 @@ export default function AdminReportsPage({ setActivePage, onOpenEvidence }) {
   return (
     <div className="space-y-8 pb-20 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 font-sans desk-grid-background">
       
+      {/* Realtime Alert Banner */}
+      <AnimatePresence>
+        {liveToast && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="bg-red-500 text-white p-4 rounded-2xl border-3 border-slate-900 shadow-[4px_4px_0px_0px_#0f172a] flex items-center justify-between gap-3"
+          >
+            <div className="flex items-center gap-2.5 font-black text-xs">
+              <Zap className="w-4 h-4 text-yellow-300 animate-bounce" />
+              <span>[REALTIME WS: admin:reports] — {liveToast}</span>
+            </div>
+            <span className="stamp-verified text-[9px] py-0.5 px-2 bg-slate-900 text-emerald-300 border-none">LIVE FEED</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Main Tactile Dossier Container */}
       <div className="dossier-card rounded-3xl p-6 sm:p-10 border-3 border-slate-900 shadow-[8px_8px_0px_0px_#0f172a] relative overflow-hidden bg-[#ffedd5] text-slate-900">
         

@@ -1,18 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ShieldCheck, MapPin, Briefcase, CheckCircle2, Paperclip, 
   ExternalLink, Copy, Share2, MessageSquare, AlertCircle, Eye, 
-  Sparkles, Calendar, Award, User, Clock, Flag, Send, X
+  Sparkles, Calendar, Award, User, Clock, Flag, Send, X, Zap
 } from 'lucide-react';
+import { subscribeToEvidenceChannel } from '../lib/realtime';
 
-export default function PublicPersonProfilePage({ slug = 'alexrivera', onOpenEvidence }) {
+export default function PublicPersonProfilePage({ slug = 'alexrivera', profileId = 'alexrivera-id', onOpenEvidence }) {
   const [copied, setCopied] = useState(false);
   const [showContactModal, setShowContactModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [contactMessage, setContactMessage] = useState('');
   const [senderEmail, setSenderEmail] = useState('');
   const [messageSent, setMessageSent] = useState(false);
+  const [liveVerificationToast, setLiveVerificationToast] = useState(null);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToEvidenceChannel(profileId, (updatedEvidence) => {
+      setLiveVerificationToast(`Proof "${updatedEvidence.title || 'Artifact'}" was just verified live!`);
+      setTimeout(() => setLiveVerificationToast(null), 5000);
+    });
+
+    return () => {
+      if (typeof unsubscribe === 'function') unsubscribe();
+    };
+  }, [profileId]);
 
   const fullUrl = `https://backed.app/${slug}`;
 
@@ -36,6 +49,24 @@ export default function PublicPersonProfilePage({ slug = 'alexrivera', onOpenEvi
   return (
     <div className="space-y-8 pb-20 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 font-sans desk-grid-background">
       
+      {/* Realtime Proof Badge Status Alert Banner */}
+      <AnimatePresence>
+        {liveVerificationToast && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="bg-emerald-400 text-slate-900 p-4 rounded-2xl border-3 border-slate-900 shadow-[4px_4px_0px_0px_#0f172a] flex items-center justify-between gap-3"
+          >
+            <div className="flex items-center gap-2.5 font-black text-xs text-slate-900">
+              <Zap className="w-4 h-4 text-slate-900 animate-bounce" />
+              <span>[REALTIME WS: evidence:{profileId}] — {liveVerificationToast}</span>
+            </div>
+            <span className="stamp-verified text-[9px] py-0.5 px-2 bg-slate-900 text-emerald-300 border-none">CONFIRMED LIVE</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Public Profile Header Banner */}
       <div className="bg-white border-3 border-slate-900 rounded-2xl p-4 shadow-[4px_4px_0px_0px_#0f172a] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex items-center gap-2 text-xs font-mono font-black text-slate-900 uppercase">

@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   MessageSquare, Mail, Paperclip, CheckCircle2, Clock, 
-  Inbox, Reply, Check, Trash2, Sparkles, Filter, ShieldCheck 
+  Inbox, Reply, Check, Trash2, Sparkles, Filter, ShieldCheck, Zap
 } from 'lucide-react';
+import { subscribeToInboxChannel } from '../lib/realtime';
 
-export default function DashboardInboxPage({ setActivePage }) {
+export default function DashboardInboxPage({ setActivePage, profileId = 'alexrivera-id' }) {
   const [activeFilter, setActiveFilter] = useState('All');
+  const [liveToast, setLiveToast] = useState(null);
   const [messages, setMessages] = useState([
     {
       id: 1,
@@ -40,6 +42,19 @@ export default function DashboardInboxPage({ setActivePage }) {
     }
   ]);
 
+  // Subscribe to real-time inbox channel: inbox:{profile_id}
+  useEffect(() => {
+    const unsubscribe = subscribeToInboxChannel(profileId, (newMsg) => {
+      setMessages((prev) => [newMsg, ...prev]);
+      setLiveToast(`New message from ${newMsg.senderName || 'a visitor'}!`);
+      setTimeout(() => setLiveToast(null), 4000);
+    });
+
+    return () => {
+      if (typeof unsubscribe === 'function') unsubscribe();
+    };
+  }, [profileId]);
+
   const filteredMessages = messages.filter((msg) => {
     if (activeFilter === 'Unread') return msg.isUnread;
     if (activeFilter === 'Handled') return msg.isHandled;
@@ -57,6 +72,24 @@ export default function DashboardInboxPage({ setActivePage }) {
   return (
     <div className="space-y-8 pb-20 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 font-sans desk-grid-background">
       
+      {/* Realtime Alert Banner */}
+      <AnimatePresence>
+        {liveToast && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="bg-emerald-500 text-slate-900 p-4 rounded-2xl border-3 border-slate-900 shadow-[4px_4px_0px_0px_#0f172a] flex items-center justify-between gap-3"
+          >
+            <div className="flex items-center gap-2.5 font-black text-xs text-slate-900">
+              <Zap className="w-4 h-4 text-amber-300 animate-bounce" />
+              <span>[REALTIME WS: inbox:{profileId}] — {liveToast}</span>
+            </div>
+            <span className="stamp-verified text-[9px] py-0.5 px-2 bg-slate-900 text-emerald-300 border-none">NEW INQUIRY</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Main Tactile Dossier Container */}
       <div className="dossier-card rounded-3xl p-6 sm:p-10 border-3 border-slate-900 shadow-[8px_8px_0px_0px_#0f172a] relative overflow-hidden bg-[#ffedd5] text-slate-900">
         

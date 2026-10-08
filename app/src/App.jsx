@@ -4,6 +4,7 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import EvidenceModal from './components/EvidenceModal';
 import AuthModal from './components/AuthModal';
+import RealtimeStatusBar from './components/RealtimeStatusBar';
 
 import HomePage from './pages/HomePage';
 import ProductsPage from './pages/ProductsPage';
@@ -176,6 +177,9 @@ export default function App() {
   return (
     <div className="min-h-screen flex flex-col bg-[#f7f5f0] text-slate-900 font-sans selection:bg-yellow-300 selection:text-slate-900">
       
+      {/* Realtime Architecture Live Status & Testing Toolbar */}
+      <RealtimeStatusBar profileId="alexrivera-id" />
+
       {/* Top Navbar */}
       <Navbar 
         activePage={activePage} 

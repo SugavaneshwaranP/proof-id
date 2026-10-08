@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
   ShieldCheck, Send, CheckCircle2, Paperclip, MessageSquare, 
-  User, Mail, FileText, Info, ArrowLeft, Shield
+  User, Mail, FileText, Info, ArrowLeft, Shield, Zap
 } from 'lucide-react';
+import { broadcastInboxMessage } from '../lib/realtime';
 
-export default function PublicContactPage({ name = 'Alex Rivera', slug = 'alexrivera', setActivePage }) {
+export default function PublicContactPage({ name = 'Alex Rivera', slug = 'alexrivera', profileId = 'alexrivera-id', setActivePage }) {
   const [yourName, setYourName] = useState('');
   const [yourEmail, setYourEmail] = useState('');
   const [lookingFor, setLookingFor] = useState('');
@@ -16,6 +17,19 @@ export default function PublicContactPage({ name = 'Alex Rivera', slug = 'alexri
     e.preventDefault();
     if (!yourName || !yourEmail || !message) return;
     setIsSubmitted(true);
+
+    // Broadcast message real-time event to inbox:{profile_id} and profile:{profile_id}:activity channels
+    broadcastInboxMessage(profileId, {
+      id: Date.now(),
+      senderName: yourName,
+      senderEmail: yourEmail,
+      dateReceived: 'Just now',
+      capabilityTag: lookingFor || 'General Inquiry',
+      messageText: message,
+      isHandled: false,
+      isUnread: true,
+      created_at: new Date().toISOString()
+    });
   };
 
   return (

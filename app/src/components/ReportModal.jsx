@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Flag, X, CheckCircle2, Send, AlertTriangle } from 'lucide-react';
 
+import { broadcastAdminReport } from '../lib/realtime';
+
 export default function ReportModal({ isOpen, onClose, targetPage = 'backed.app/alexrivera' }) {
   const [selectedReason, setSelectedReason] = useState('Fake or misleading proof');
   const [details, setDetails] = useState('');
@@ -12,6 +14,17 @@ export default function ReportModal({ isOpen, onClose, targetPage = 'backed.app/
   const handleSubmit = (e) => {
     e.preventDefault();
     setIsSubmitted(true);
+
+    // Broadcast report in real-time to admin:reports channel
+    broadcastAdminReport({
+      id: Date.now(),
+      page: targetPage,
+      reason: selectedReason,
+      details: details || 'No additional details provided.',
+      reportedOn: 'Just now',
+      status: 'Pending Review'
+    });
+
     setTimeout(() => {
       setIsSubmitted(false);
       onClose();

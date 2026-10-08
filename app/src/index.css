@@ -1,0 +1,278 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: #f3efe6;
+    color: #0f172a;
+    overflow-x: hidden;
+    selection-background-color: #fde047;
+    selection-color: #0f172a;
+  }
+}
+
+/* Character Dossier & Thought Bubble Theme Utilities (Image 1 & Image 2) */
+
+.desk-grid-background {
+  background-color: #f3efe6;
+  background-size: 30px 30px;
+  background-image: 
+    linear-gradient(to right, rgba(15, 23, 42, 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(15, 23, 42, 0.06) 1px, transparent 1px);
+}
+
+/* Thought Bubble Container (Matching Image 1) */
+.thought-bubble {
+  background: #ffffff;
+  border: 2.5px solid #0f172a;
+  border-radius: 2rem;
+  box-shadow: 4px 4px 0px 0px #0f172a;
+  position: relative;
+  padding: 0.75rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  z-index: 20;
+}
+
+.thought-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 30px;
+  width: 14px;
+  height: 14px;
+  background: #ffffff;
+  border-right: 2.5px solid #0f172a;
+  border-bottom: 2.5px solid #0f172a;
+  border-radius: 50%;
+}
+
+.thought-bubble-dot {
+  width: 10px;
+  height: 10px;
+  background: #ffffff;
+  border: 2px solid #0f172a;
+  border-radius: 50%;
+  position: absolute;
+  bottom: -18px;
+  left: 20px;
+}
+
+/* Corner Tape Strip (Matching Image 2) */
+.tape-strip {
+  position: absolute;
+  top: -12px;
+  right: 20px;
+  width: 90px;
+  height: 24px;
+  background: rgba(254, 240, 138, 0.85);
+  border: 1px dashed #ca8a04;
+  transform: rotate(6deg);
+  z-index: 25;
+  box-shadow: 1px 1px 4px rgba(0, 0, 0, 0.15);
+}
+
+/* Dossier Cards with Offset Shadows */
+.dossier-card {
+  background: #ffffff;
+  border: 2.5px solid #0f172a;
+  border-radius: 1.75rem;
+  box-shadow: 6px 6px 0px 0px #0f172a;
+  position: relative;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dossier-card:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 8px 8px 0px 0px #0f172a;
+}
+
+/* Colored Dossier Sheet Cards */
+.dossier-card-yellow {
+  background: #fef08a;
+  border: 2.5px solid #0f172a;
+  border-radius: 1.75rem;
+  box-shadow: 6px 6px 0px 0px #0f172a;
+  color: #0f172a;
+  position: relative;
+}
+
+.dossier-card-mint {
+  background: #a7f3d0;
+  border: 2.5px solid #0f172a;
+  border-radius: 1.75rem;
+  box-shadow: 6px 6px 0px 0px #0f172a;
+  color: #0f172a;
+  position: relative;
+}
+
+.dossier-card-pink {
+  background: #fbcfe8;
+  border: 2.5px solid #0f172a;
+  border-radius: 1.75rem;
+  box-shadow: 6px 6px 0px 0px #0f172a;
+  color: #0f172a;
+  position: relative;
+}
+
+.dossier-card-peach {
+  background: #ffedd5;
+  border: 2.5px solid #0f172a;
+  border-radius: 1.75rem;
+  box-shadow: 6px 6px 0px 0px #0f172a;
+  color: #0f172a;
+  position: relative;
+}
+
+.dossier-card-blue {
+  background: #bae6fd;
+  border: 2.5px solid #0f172a;
+  border-radius: 1.75rem;
+  box-shadow: 6px 6px 0px 0px #0f172a;
+  color: #0f172a;
+  position: relative;
+}
+
+/* Paper Binder Clip Graphic */
+.dossier-clip {
+  position: absolute;
+  top: -14px;
+  left: 28px;
+  background: #0f172a;
+  border: 2px solid #0f172a;
+  color: #ffffff;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  padding: 0.2rem 0.65rem;
+  border-radius: 0.5rem;
+  box-shadow: 2px 2px 0px 0px #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  z-index: 25;
+}
+
+/* Circular Stamp Badge */
+.dossier-stamp {
+  border: 2.5px solid #047857;
+  color: #047857;
+  background: #d1fae5;
+  font-family: var(--font-mono);
+  font-weight: 800;
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  transform: rotate(-2deg);
+  box-shadow: 2px 2px 0px 0px #047857;
+}
+
+/* Stamped Pills (Image 2 style: "My Bio:", "About Me:", "Likes:") */
+.dossier-pill-bio {
+  background: #fef08a;
+  color: #854d0e;
+  border: 2px solid #0f172a;
+  font-weight: 800;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  box-shadow: 2px 2px 0px 0px #0f172a;
+}
+
+.dossier-pill-about {
+  background: #a7f3d0;
+  color: #065f46;
+  border: 2px solid #0f172a;
+  font-weight: 800;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  box-shadow: 2px 2px 0px 0px #0f172a;
+}
+
+.dossier-pill-likes {
+  background: #fbcfe8;
+  color: #9d174d;
+  border: 2px solid #0f172a;
+  font-weight: 800;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  box-shadow: 2px 2px 0px 0px #0f172a;
+}
+
+.dossier-pill-goal {
+  background: #ffedd5;
+  color: #9a3412;
+  border: 2px solid #0f172a;
+  font-weight: 800;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  box-shadow: 2px 2px 0px 0px #0f172a;
+}
+
+.dossier-pill-proof {
+  background: #bae6fd;
+  color: #0369a1;
+  border: 2px solid #0f172a;
+  font-weight: 800;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  box-shadow: 2px 2px 0px 0px #0f172a;
+}
+
+/* Glass panel */
+.glass-panel {
+  background: rgba(243, 239, 230, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 2.5px solid #0f172a;
+}
+
+.glass-card {
+  background: #ffffff;
+  border: 2.5px solid #0f172a;
+  border-radius: 1.75rem;
+  box-shadow: 6px 6px 0px 0px #0f172a;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #f3efe6;
+}
+::-webkit-scrollbar-thumb {
+  background: #0f172a;
+  border-radius: 4px;
+}

@@ -43,9 +43,15 @@ import NotFoundPage from './pages/NotFoundPage';
 import ServerErrorPage from './pages/ServerErrorPage';
 
 import { authService } from './lib/authService';
+import { parseRoute, getPathForPage, checkAuthGuard } from './lib/router';
 
 export default function App() {
-  const [activePage, setActivePage] = useState('home');
+  const initialRoute = parseRoute();
+  const initialGuard = checkAuthGuard(initialRoute.page);
+  
+  const [activePage, setActivePage] = useState(initialGuard.allowed ? initialRoute.page : (initialGuard.redirectPage || 'home'));
+  const [activeSlug, setActiveSlug] = useState(initialRoute.slug);
+  const [activeToken, setActiveToken] = useState(initialRoute.token || null);
   const [selectedEvidence, setSelectedEvidence] = useState(null);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [authDefaultType, setAuthDefaultType] = useState('person');
@@ -60,6 +66,25 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
+  // Listen for browser back / forward navigation (popstate)
+  useEffect(() => {
+    const handlePopState = () => {
+      const parsed = parseRoute();
+      const guard = checkAuthGuard(parsed.page);
+      if (guard.allowed) {
+        setActivePage(parsed.page);
+        setActiveSlug(parsed.slug);
+        setActiveToken(parsed.token || null);
+      } else {
+        setActivePage(guard.redirectPage);
+        window.history.replaceState(null, '', getPathForPage(guard.redirectPage));
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
   // Scroll to top on page change
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -72,7 +97,7 @@ export default function App() {
 
   const handleScrollToSection = (sectionId) => {
     if (activePage !== 'home') {
-      setActivePage('home');
+      navigateTo('home');
       setTimeout(() => {
         const el = document.getElementById(sectionId);
         if (el) el.scrollIntoView({ behavior: 'smooth' });
@@ -83,18 +108,36 @@ export default function App() {
     }
   };
 
-  const handlePageChange = (pageId) => {
+  const navigateTo = (pageId, slug = null, token = null) => {
+    let targetPage = pageId;
     if (pageId === 'create' || pageId === 'signup') {
-      setActivePage('signup');
-    } else if (pageId === 'login') {
-      setActivePage('login');
+      targetPage = 'signup';
     } else if (pageId === 'for-business') {
       handleScrollToSection('for-business');
+      return;
     } else if (pageId === 'how-it-works') {
       handleScrollToSection('how-it-works');
-    } else {
-      setActivePage(pageId);
+      return;
     }
+
+    // Check auth guards
+    const guard = checkAuthGuard(targetPage);
+    if (!guard.allowed) {
+      targetPage = guard.redirectPage;
+    }
+
+    const nextPath = getPathForPage(targetPage, slug);
+    if (window.location.pathname !== nextPath) {
+      window.history.pushState(null, '', nextPath);
+    }
+
+    setActivePage(targetPage);
+    setActiveSlug(slug);
+    if (token) setActiveToken(token);
+  };
+
+  const handlePageChange = (pageId, slug = null, token = null) => {
+    navigateTo(pageId, slug, token);
   };
 
   const renderPage = () => {
@@ -112,12 +155,14 @@ export default function App() {
           <OnboardingSlugPage 
             setActivePage={(nextPage) => {
               if (nextPage === 'onboarding-basics' && authDefaultType === 'business') {
-                setActivePage('onboarding-basics-business');
+                handlePageChange('onboarding-basics-business');
               } else {
-                setActivePage(nextPage);
+                handlePageChange(nextPage);
               }
             }} 
-            onSaveSlug={(slug) => console.log('Saved slug:', slug)} 
+            onSaveSlug={(slug) => {
+              setActiveSlug(slug);
+            }} 
           />
         );
       case 'onboarding-basics':
@@ -129,9 +174,9 @@ export default function App() {
       case 'onboarding-proof':
         return <OnboardingProofPage setActivePage={handlePageChange} onAddProof={(proof) => console.log('Added proof:', proof)} />;
       case 'onboarding-preview':
-        return <OnboardingPreviewPage setActivePage={handlePageChange} onPublish={() => console.log('Page Published!')} />;
+        return <OnboardingPreviewPage setActivePage={handlePageChange} onPublish={() => handlePageChange('onboarding-published')} />;
       case 'onboarding-published':
-        return <OnboardingPublishedPage setActivePage={handlePageChange} slug={currentUser?.slug || "alexrivera"} />;
+        return <OnboardingPublishedPage setActivePage={handlePageChange} slug={activeSlug || currentUser?.slug || "alexrivera"} />;
       case 'dashboard':
         return <DashboardHomePage setActivePage={handlePageChange} userName={currentUser?.fullName?.split(' ')[0] || "Alex"} />;
       case 'dashboard-profile':
@@ -151,13 +196,13 @@ export default function App() {
       case 'dashboard-settings':
         return <DashboardSettingsPage setActivePage={handlePageChange} />;
       case 'public-profile':
-        return <PublicPersonProfilePage slug={currentUser?.slug || "alexrivera"} onOpenEvidence={setSelectedEvidence} />;
+        return <PublicPersonProfilePage slug={activeSlug || currentUser?.slug || "alexrivera"} onOpenEvidence={setSelectedEvidence} setActivePage={handlePageChange} />;
       case 'public-business-profile':
-        return <PublicBusinessProfilePage slug="apex-dynamics" onOpenEvidence={setSelectedEvidence} />;
+        return <PublicBusinessProfilePage slug={activeSlug || "apex-dynamics"} onOpenEvidence={setSelectedEvidence} setActivePage={handlePageChange} />;
       case 'confirm-claim':
-        return <ConfirmClaimPage token="token-99281" requesterName={currentUser?.fullName || "Alex Rivera"} claimText="I built the checkout flow for this project." setActivePage={handlePageChange} />;
+        return <ConfirmClaimPage token={activeToken || "token-99281"} requesterName={currentUser?.fullName || "Alex Rivera"} claimText="I built the checkout flow for this project." setActivePage={handlePageChange} />;
       case 'public-contact':
-        return <PublicContactPage name={currentUser?.fullName || "Alex Rivera"} slug={currentUser?.slug || "alexrivera"} setActivePage={handlePageChange} />;
+        return <PublicContactPage name={currentUser?.fullName || "Alex Rivera"} slug={activeSlug || currentUser?.slug || "alexrivera"} setActivePage={handlePageChange} />;
       case 'discover':
         return <DiscoverPage setActivePage={handlePageChange} onOpenEvidence={setSelectedEvidence} />;
       case 'admin-reports':

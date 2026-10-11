@@ -33,13 +33,29 @@ export default function EvidenceModal({ isOpen, onClose, evidence }) {
 
           {/* Title & Stamp Header */}
           <div className="flex items-start gap-3.5 mb-5 pt-2">
-            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-emerald-400 text-slate-900 border-2 border-white flex items-center justify-center shadow-md shrink-0">
+            <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl border-2 border-white flex items-center justify-center shadow-md shrink-0 ${
+              evidence.status === 'verified' ? 'bg-emerald-400 text-slate-900' :
+              evidence.status === 'pending' ? 'bg-amber-400 text-slate-900' :
+              evidence.status === 'declined' ? 'bg-rose-500 text-white' :
+              evidence.status === 'expired' ? 'bg-slate-700 text-slate-300' :
+              'bg-blue-400 text-slate-900'
+            }`}>
               <Award className="w-6 h-6 sm:w-7 sm:h-7" />
             </div>
             <div className="space-y-1 min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-1.5">
-                <span className="stamp-verified text-[9px] py-0.5 px-2">
-                  ★ VERIFIED CLAIM ★
+                <span className={`text-[9px] font-mono font-black uppercase py-0.5 px-2 rounded-md border ${
+                  evidence.status === 'verified' ? 'bg-emerald-500 text-slate-950 border-emerald-300' :
+                  evidence.status === 'pending' ? 'bg-amber-400 text-slate-950 border-amber-300' :
+                  evidence.status === 'declined' ? 'bg-rose-900 text-rose-200 border-rose-600' :
+                  evidence.status === 'expired' ? 'bg-slate-800 text-slate-400 border-slate-600' :
+                  'bg-blue-900 text-blue-200 border-blue-600'
+                }`}>
+                  {evidence.status === 'verified' ? '★ VERIFIER CONFIRMED ★' :
+                   evidence.status === 'pending' ? '⏳ PENDING CONFIRMATION' :
+                   evidence.status === 'declined' ? '✕ DISPUTED / DECLINED' :
+                   evidence.status === 'expired' ? '⚠️ EXPIRED PROOF' :
+                   '📝 SELF-ADDED (UNVERIFIED)'}
                 </span>
                 <span className="text-[10px] font-mono font-black bg-slate-800 text-emerald-300 px-2 py-0.5 rounded border border-slate-700 uppercase">
                   {evidence.category || evidence.type || 'Proof Document'}
@@ -90,6 +106,14 @@ export default function EvidenceModal({ isOpen, onClose, evidence }) {
                 "{evidence.verifier_note || evidence.scope || 'Confirmed architectural contribution, component primitives design, and migration implementation on production repository.'}"
               </div>
             </div>
+
+            {/* Freshness / Changed-Since-Verification Notice (Slice 5 requirement) */}
+            {evidence.changed_since_verification && (
+              <div className="p-3 bg-amber-950/50 border border-amber-500/60 rounded-xl text-amber-200 text-xs flex items-center gap-2">
+                <span className="text-sm">⚠️</span>
+                <span><strong>Freshness Alert:</strong> Associated profile claims were updated after this verification was recorded.</span>
+              </div>
+            )}
           </div>
 
           {/* Actions */}

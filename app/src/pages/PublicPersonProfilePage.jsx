@@ -49,6 +49,16 @@ export default function PublicPersonProfilePage({ slug = 'alexrivera', onOpenEvi
     };
   }, [slug]);
 
+  // Update dynamic document title and canonical title (Rule 13 requirement)
+  useEffect(() => {
+    if (profile?.full_name) {
+      document.title = `${profile.full_name} (@${slug}) — Backed Verified Profile`;
+    }
+    return () => {
+      document.title = 'Backed — Proof-Backed Identity Network';
+    };
+  }, [profile?.full_name, slug]);
+
   const fullUrl = `https://backed.network/${slug}`;
 
   // Criterion 7: Login-Free Shareability - Copy URL
@@ -120,6 +130,37 @@ ${evidenceList.map((e) => `- ${e.title} [${e.status?.toUpperCase()}] (Verifier: 
       setReportReason('');
     }, 1500);
   };
+
+  if (profile?._isLoading) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 py-12 animate-pulse space-y-6">
+        <div className="h-48 bg-slate-200 rounded-3xl border-3 border-slate-900 shadow-[6px_6px_0px_0px_#0f172a]" />
+        <div className="h-28 bg-slate-200 rounded-2xl border-3 border-slate-900 shadow-[6px_6px_0px_0px_#0f172a]" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="h-44 bg-slate-200 rounded-2xl border-3 border-slate-900 shadow-[4px_4px_0px_0px_#0f172a]" />
+          <div className="h-44 bg-slate-200 rounded-2xl border-3 border-slate-900 shadow-[4px_4px_0px_0px_#0f172a]" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <div className="max-w-md mx-auto px-4 py-20 text-center space-y-4">
+        <div className="w-16 h-16 bg-amber-100 border-3 border-slate-900 rounded-2xl mx-auto flex items-center justify-center font-black text-2xl shadow-[4px_4px_0px_0px_#0f172a]">
+          ?
+        </div>
+        <h2 className="text-2xl font-black text-slate-900">Profile Not Found</h2>
+        <p className="text-slate-600 font-medium">The profile "{slug}" has not been published or does not exist.</p>
+        <button 
+          onClick={() => window.location.reload()} 
+          className="px-5 py-2.5 bg-yellow-400 hover:bg-yellow-300 border-3 border-slate-900 rounded-xl font-black text-slate-900 shadow-[3px_3px_0px_0px_#0f172a] cursor-pointer"
+        >
+          Retry Connection
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 pb-24 max-w-4xl mx-auto px-3 sm:px-6 lg:px-8 pt-6 font-sans desk-grid-background">

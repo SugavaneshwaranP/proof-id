@@ -1,204 +1,221 @@
 // ============================================================================
-// BACKED — REAL-TIME AUTHENTICATION SERVICE
-// Full real-time signup, login, session persistence, and multi-tab synchrony.
+// PROOF-ID / BACKED — OFFICIAL PRODUCTION AUTHENTICATION SERVICE
+// Exclusively powered by Supabase Auth (Argon2/Bcrypt, PKCE Session Management)
+// Zero plaintext passwords, zero mock seed accounts in production paths.
 // ============================================================================
 
 import { supabase } from "./supabaseClient";
 
-const ACCOUNTS_STORAGE_KEY = "backed_user_accounts";
-const SESSION_STORAGE_KEY = "backed_active_session";
-
-// Default seed users
-const SEED_USERS = [
-  {
-    id: "usr_alex_rivera",
-    email: "alex@example.com",
-    password: "password123",
-    fullName: "Alex Rivera",
-    profileType: "person",
-    slug: "alexrivera",
-    avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200",
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: "usr_apex_dynamics",
-    email: "contact@apexdynamics.com",
-    password: "password123",
-    fullName: "Apex Dynamics LLC",
-    profileType: "business",
-    slug: "apex-dynamics",
-    avatarUrl: "https://images.unsplash.com/photo-1560179707-f14e90ef3623?auto=format&fit=crop&q=80&w=200",
-    createdAt: new Date().toISOString(),
-  }
-];
-
-function getAccounts() {
-  try {
-    const raw = localStorage.getItem(ACCOUNTS_STORAGE_KEY);
-    if (!raw) {
-      localStorage.setItem(ACCOUNTS_STORAGE_KEY, JSON.stringify(SEED_USERS));
-      return SEED_USERS;
-    }
-    return JSON.parse(raw);
-  } catch {
-    return SEED_USERS;
-  }
-}
-
-function saveAccounts(accounts) {
-  try {
-    localStorage.setItem(ACCOUNTS_STORAGE_KEY, JSON.stringify(accounts));
-  } catch (err) {
-    console.warn("Error saving user accounts:", err);
-  }
-}
-
 export const authService = {
   /**
-   * Get current active user session
+   * Get the current authenticated user synchronously from cached session,
+   * with full fallback to async supabase.auth.getUser()
    */
   getCurrentUser: () => {
     try {
-      const raw = localStorage.getItem(SESSION_STORAGE_KEY);
-      return raw ? JSON.parse(raw) : null;
+      // Fast synchronous check from PKCE persisted session
+      const rawSession = localStorage.getItem("backed-auth-token");
+      if (rawSession) {
+        const parsed = JSON.parse(rawSession);
+        const user = parsed?.user;
+        if (user) {
+          return {
+            id: user.id,
+            email: user.email,
+            fullName: user.user_metadata?.full_name || user.email?.split("@")[0] || "User",
+            profileType: user.user_metadata?.profile_type || "person",
+            slug: user.user_metadata?.slug || user.id.slice(0, 8),
+            avatarUrl: user.user_metadata?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(user.id)}`,
+            createdAt: user.created_at,
+          };
+        }
+      }
+      return null;
     } catch {
       return null;
     }
   },
 
   /**
-   * Set active session & notify all components in real-time
+   * Asynchronously fetch canonical authenticated user from Supabase
    */
-  setSession: (user) => {
+  fetchUser: async () => {
     try {
-      if (user) {
-        localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(user));
-      } else {
-        localStorage.removeItem(SESSION_STORAGE_KEY);
-      }
-      window.dispatchEvent(new CustomEvent("backed-auth-change", { detail: user }));
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error || !user) return null;
+
+      return {
+        id: user.id,
+        email: user.email,
+        fullName: user.user_metadata?.full_name || user.email?.split("@")[0] || "User",
+        profileType: user.user_metadata?.profile_type || "person",
+        slug: user.user_metadata?.slug || user.id.slice(0, 8),
+        avatarUrl: user.user_metadata?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(user.id)}`,
+        createdAt: user.created_at,
+      };
     } catch (err) {
-      console.warn("Error persisting auth session:", err);
+      console.warn("Failed to fetch user from Supabase Auth:", err);
+      return null;
     }
   },
 
   /**
-   * Subscribe to real-time auth changes
+   * Listen to real-time auth state changes across browser sessions & tabs
    */
   onAuthChange: (callback) => {
-    const handler = (e) => callback(e.detail);
-    window.addEventListener("backed-auth-change", handler);
-    return () => window.removeEventListener("backed-auth-change", handler);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      const user = session?.user
+        ? {
+            id: session.user.id,
+            email: session.user.email,
+            fullName: session.user.user_metadata?.full_name || session.user.email?.split("@")[0] || "User",
+            profileType: session.user.user_metadata?.profile_type || "person",
+            slug: session.user.user_metadata?.slug || session.user.id.slice(0, 8),
+            avatarUrl: session.user.user_metadata?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(session.user.id)}`,
+            createdAt: session.user.created_at,
+          }
+        : null;
+
+      callback(user, event);
+    });
+
+    return () => {
+      subscription?.unsubscribe();
+    };
   },
 
   /**
-   * Real-time Sign Up
+   * Production Sign Up via Supabase Auth
    */
   signUp: async ({ email, password, fullName, profileType = "person", slug = "" }) => {
-    // Check Supabase MFA/Client if initialized
-    try {
-      if (supabase && supabase.auth && supabase.auth.getUser) {
-        await supabase.auth.getUser();
-      }
-    } catch (e) {
-      // Fallback to local store
-    }
-
-    const accounts = getAccounts();
     const cleanEmail = email.trim().toLowerCase();
+    const cleanSlug = (slug || cleanEmail.split("@")[0]).toLowerCase().replace(/[^a-z0-9_-]/g, "");
 
-    const existing = accounts.find((a) => a.email.toLowerCase() === cleanEmail);
-    if (existing) {
-      throw new Error("An account with this email address already exists. Please log in instead.");
-    }
-
-    const generatedSlug = slug || cleanEmail.split("@")[0].replace(/[^a-z0-9]/g, "-");
-    const newUser = {
-      id: "usr_" + Date.now(),
+    const { data, error } = await supabase.auth.signUp({
       email: cleanEmail,
       password: password,
-      fullName: fullName.trim(),
-      profileType: profileType,
-      slug: generatedSlug,
-      avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(fullName)}`,
-      createdAt: new Date().toISOString(),
+      options: {
+        data: {
+          full_name: fullName.trim(),
+          profile_type: profileType,
+          slug: cleanSlug,
+        },
+      },
+    });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    const user = data.user;
+    if (!user) {
+      throw new Error("Unable to create account. Please check your credentials.");
+    }
+
+    return {
+      id: user.id,
+      email: user.email,
+      fullName: user.user_metadata?.full_name || fullName,
+      profileType: user.user_metadata?.profile_type || profileType,
+      slug: user.user_metadata?.slug || cleanSlug,
+      createdAt: user.created_at,
     };
-
-    accounts.push(newUser);
-    saveAccounts(accounts);
-
-    const sessionUser = { ...newUser };
-    delete sessionUser.password;
-
-    authService.setSession(sessionUser);
-    return sessionUser;
   },
 
   /**
-   * Real-time Sign In
+   * Production Sign In with Password via Supabase Auth
    */
   signIn: async ({ email, password }) => {
-    const accounts = getAccounts();
     const cleanEmail = email.trim().toLowerCase();
 
-    const user = accounts.find((a) => a.email.toLowerCase() === cleanEmail);
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: cleanEmail,
+      password: password,
+    });
 
-    if (!user) {
-      throw new Error("No account found with this email address. Please sign up to create your page.");
+    if (error) {
+      throw new Error(error.message);
     }
 
-    if (user.password !== password) {
-      throw new Error("Invalid password. Please double check and try again.");
-    }
-
-    const sessionUser = { ...user };
-    delete sessionUser.password;
-
-    authService.setSession(sessionUser);
-    return sessionUser;
-  },
-
-  /**
-   * Real-time OAuth Sign In (Google)
-   */
-  signInWithGoogle: async () => {
-    const googleUser = {
-      id: "usr_google_" + Date.now(),
-      email: "alex.rivera.google@gmail.com",
-      fullName: "Alex Rivera",
-      profileType: "person",
-      slug: "alexrivera-google",
-      avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200",
-      createdAt: new Date().toISOString(),
+    const user = data.user;
+    return {
+      id: user.id,
+      email: user.email,
+      fullName: user.user_metadata?.full_name || user.email?.split("@")[0] || "User",
+      profileType: user.user_metadata?.profile_type || "person",
+      slug: user.user_metadata?.slug || user.id.slice(0, 8),
+      createdAt: user.created_at,
     };
-
-    authService.setSession(googleUser);
-    return googleUser;
   },
 
   /**
-   * Real-time Sign Out
+   * Production OAuth Sign In via Supabase Auth (GitHub or Google)
+   */
+  signInWithOAuth: async (provider = "github") => {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: provider,
+      options: {
+        redirectTo: `${window.location.origin}/dashboard`,
+      },
+    });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data;
+  },
+
+  /**
+   * Send Password Reset Email via Supabase Auth
+   */
+  resetPasswordForEmail: async (email) => {
+    const { data, error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
+      redirectTo: `${window.location.origin}/dashboard-settings`,
+    });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data;
+  },
+
+  /**
+   * Sign Out & Invalidate Session
    */
   signOut: async () => {
-    authService.setSession(null);
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.warn("Supabase signOut error:", error.message);
+    }
+    // Clean any residual local tokens
+    localStorage.removeItem("backed-auth-token");
   },
 
   /**
-   * Update User Profile Details
+   * Update Profile Metadata in Supabase Auth & Database
    */
   updateProfile: async (updates) => {
-    const currentUser = authService.getCurrentUser();
-    if (!currentUser) return null;
+    const { data, error } = await supabase.auth.updateUser({
+      data: {
+        ...(updates.fullName ? { full_name: updates.fullName } : {}),
+        ...(updates.slug ? { slug: updates.slug } : {}),
+        ...(updates.avatarUrl ? { avatar_url: updates.avatarUrl } : {}),
+      },
+    });
 
-    const updatedUser = { ...currentUser, ...updates, updatedAt: new Date().toISOString() };
-    authService.setSession(updatedUser);
-
-    const accounts = getAccounts();
-    const idx = accounts.findIndex((a) => a.id === currentUser.id);
-    if (idx !== -1) {
-      accounts[idx] = { ...accounts[idx], ...updates };
-      saveAccounts(accounts);
+    if (error) {
+      throw new Error(error.message);
     }
-    return updatedUser;
-  }
+
+    const user = data.user;
+    return {
+      id: user.id,
+      email: user.email,
+      fullName: user.user_metadata?.full_name,
+      profileType: user.user_metadata?.profile_type,
+      slug: user.user_metadata?.slug,
+    };
+  },
 };

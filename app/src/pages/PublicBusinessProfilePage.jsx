@@ -20,6 +20,10 @@ export default function PublicBusinessProfilePage({ slug = 'apex-dynamics', onOp
   const [quoteNotes, setQuoteNotes] = useState('');
   const [buyerEmail, setBuyerEmail] = useState('');
   const [quantity, setQuantity] = useState('100');
+  const [quantityUnit, setQuantityUnit] = useState('units');
+  const [targetDate, setTargetDate] = useState('');
+  const [deliveryRegion, setDeliveryRegion] = useState('North America');
+  const [requiredCertifications, setRequiredCertifications] = useState('ISO 9001');
   const [quoteSent, setQuoteSent] = useState(false);
 
   useEffect(() => {
@@ -35,6 +39,16 @@ export default function PublicBusinessProfilePage({ slug = 'apex-dynamics', onOp
     const unsub = dbStore.onSync(load);
     return () => unsub();
   }, [slug]);
+
+  // Update dynamic document title and canonical title (Rule 13 requirement)
+  useEffect(() => {
+    if (profile?.business_name || profile?.full_name) {
+      document.title = `${profile.business_name || profile.full_name} — Backed Verified B2B Spec`;
+    }
+    return () => {
+      document.title = 'Backed — Proof-Backed Identity Network';
+    };
+  }, [profile?.business_name, profile?.full_name, slug]);
 
   const fullUrl = `https://backed.network/${slug}`;
 
@@ -79,8 +93,8 @@ ${evidenceList.map((e) => `- ${e.title} [${e.status?.toUpperCase()}] (Auditor: $
     dbStore.sendMessage(slug, {
       sender_name: buyerEmail.split('@')[0],
       sender_email: buyerEmail,
-      subject: `RFP Quote Request (${quantity} units)`,
-      message: `Product: ${selectedProduct?.title || 'General RFP'}\nQuantity: ${quantity}\nNotes: ${quoteNotes}`,
+      subject: `Structured RFQ: ${selectedProduct?.title || 'Custom Production Batch'} (${quantity} ${quantityUnit})`,
+      message: `Product: ${selectedProduct?.title || 'Custom Production Batch'}\nQuantity: ${quantity} ${quantityUnit}\nTarget Date: ${targetDate || 'Flexible'}\nDelivery Region: ${deliveryRegion}\nRequired Certifications: ${requiredCertifications}\n\nNotes:\n${quoteNotes}`,
     });
 
     setQuoteSent(true);
@@ -90,8 +104,40 @@ ${evidenceList.map((e) => `- ${e.title} [${e.status?.toUpperCase()}] (Auditor: $
       setQuoteNotes('');
       setBuyerEmail('');
       setQuantity('100');
+      setTargetDate('');
     }, 1500);
   };
+
+  if (profile?._isLoading) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 py-12 animate-pulse space-y-6">
+        <div className="h-44 bg-slate-200 rounded-3xl border-3 border-slate-900 shadow-[6px_6px_0px_0px_#0f172a]" />
+        <div className="h-28 bg-slate-200 rounded-2xl border-3 border-slate-900 shadow-[6px_6px_0px_0px_#0f172a]" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="h-44 bg-slate-200 rounded-2xl border-3 border-slate-900 shadow-[4px_4px_0px_0px_#0f172a]" />
+          <div className="h-44 bg-slate-200 rounded-2xl border-3 border-slate-900 shadow-[4px_4px_0px_0px_#0f172a]" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <div className="max-w-md mx-auto px-4 py-20 text-center space-y-4">
+        <div className="w-16 h-16 bg-amber-100 border-3 border-slate-900 rounded-2xl mx-auto flex items-center justify-center font-black text-2xl shadow-[4px_4px_0px_0px_#0f172a]">
+          ?
+        </div>
+        <h2 className="text-2xl font-black text-slate-900">Business Profile Not Found</h2>
+        <p className="text-slate-600 font-medium">The business profile "{slug}" has not been published or does not exist.</p>
+        <button 
+          onClick={() => window.location.reload()} 
+          className="px-5 py-2.5 bg-yellow-400 hover:bg-yellow-300 border-3 border-slate-900 rounded-xl font-black text-slate-900 shadow-[3px_3px_0px_0px_#0f172a] cursor-pointer"
+        >
+          Retry Connection
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 pb-24 max-w-4xl mx-auto px-3 sm:px-6 lg:px-8 pt-6 font-sans desk-grid-background">
@@ -333,14 +379,66 @@ ${evidenceList.map((e) => `- ${e.title} [${e.status?.toUpperCase()}] (Auditor: $
                     />
                   </div>
 
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-xs font-mono font-black uppercase block mb-1">Quantity *</label>
+                      <input
+                        type="text"
+                        required
+                        value={quantity}
+                        onChange={(e) => setQuantity(e.target.value)}
+                        className="w-full bg-white border-2 border-slate-900 rounded-xl px-3 py-2 text-xs font-bold focus:outline-none min-h-[40px]"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-mono font-black uppercase block mb-1">Unit</label>
+                      <select
+                        value={quantityUnit}
+                        onChange={(e) => setQuantityUnit(e.target.value)}
+                        className="w-full bg-white border-2 border-slate-900 rounded-xl px-2 py-2 text-xs font-bold focus:outline-none min-h-[40px]"
+                      >
+                        <option value="units">units</option>
+                        <option value="pieces">pieces</option>
+                        <option value="kg">kg</option>
+                        <option value="batches">batches</option>
+                        <option value="hours">hours</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-xs font-mono font-black uppercase block mb-1">Target Date</label>
+                      <input
+                        type="date"
+                        value={targetDate}
+                        onChange={(e) => setTargetDate(e.target.value)}
+                        className="w-full bg-white border-2 border-slate-900 rounded-xl px-3 py-2 text-xs font-bold focus:outline-none min-h-[40px]"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-mono font-black uppercase block mb-1">Delivery Region</label>
+                      <select
+                        value={deliveryRegion}
+                        onChange={(e) => setDeliveryRegion(e.target.value)}
+                        className="w-full bg-white border-2 border-slate-900 rounded-xl px-2 py-2 text-xs font-bold focus:outline-none min-h-[40px]"
+                      >
+                        <option value="North America">North America</option>
+                        <option value="European Union">European Union</option>
+                        <option value="Asia-Pacific">Asia-Pacific</option>
+                        <option value="Global">Global</option>
+                      </select>
+                    </div>
+                  </div>
+
                   <div>
-                    <label className="text-xs font-mono font-black uppercase block mb-1">Requested Quantity (Units)</label>
+                    <label className="text-xs font-mono font-black uppercase block mb-1">Required Certificate</label>
                     <input
                       type="text"
-                      required
-                      value={quantity}
-                      onChange={(e) => setQuantity(e.target.value)}
-                      className="w-full bg-white border-2 border-slate-900 rounded-xl px-3.5 py-2.5 text-xs font-bold focus:outline-none min-h-[44px]"
+                      placeholder="e.g. ISO 9001, AS9100, RoHS"
+                      value={requiredCertifications}
+                      onChange={(e) => setRequiredCertifications(e.target.value)}
+                      className="w-full bg-white border-2 border-slate-900 rounded-xl px-3.5 py-2 text-xs font-bold focus:outline-none min-h-[40px]"
                     />
                   </div>
 

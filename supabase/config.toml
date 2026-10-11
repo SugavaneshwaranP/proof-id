@@ -1,0 +1,48 @@
+# ============================================================================
+# BACKED / PROOF-ID — SUPABASE PROJECT CONFIGURATION
+# Defines project ID, authentication redirects, storage, and function policies
+# ============================================================================
+
+project_id = "yvzfmfpzhanwlxstdmkk"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+major_version = 15
+
+[storage]
+enabled = true
+file_size_limit = "10MiB"
+
+[auth]
+enabled = true
+site_url = "https://backed.network"
+additional_redirect_urls = [
+  "https://backed.network/**",
+  "http://localhost:5173/**",
+  "http://127.0.0.1:5173/**"
+]
+jwt_expiry = 3600
+enable_signup = true
+
+# Edge Function Configuration
+[functions.moderate-action]
+verify_jwt = true
+
+[functions.generate-upload-url]
+verify_jwt = true
+
+[functions.send-verification-email]
+verify_jwt = true
+
+[functions.delete-account]
+verify_jwt = true
+
+[functions.aggregate-analytics]
+verify_jwt = false

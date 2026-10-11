@@ -14,6 +14,7 @@ export default function DashboardInboxPage({ setActivePage }) {
 
   const [messages, setMessages] = useState(() => dbStore.getMessages(slug));
   const [selectedMessage, setSelectedMessage] = useState(null);
+  const [statusFilter, setStatusFilter] = useState('all');
   const [replyText, setReplyText] = useState('');
   const [replySent, setReplySent] = useState(false);
   const [liveToast, setLiveToast] = useState(null);
@@ -42,6 +43,17 @@ export default function DashboardInboxPage({ setActivePage }) {
     setSelectedMessage(msg);
     if (!msg.read) {
       dbStore.markMessageRead(msg.id);
+      msg.read = true;
+      if (!msg.status || msg.status === 'new') msg.status = 'read';
+    }
+  };
+
+  const handleUpdateStatus = (msgId, newStatus) => {
+    setMessages((prev) =>
+      prev.map((m) => (m.id === msgId ? { ...m, status: newStatus } : m))
+    );
+    if (selectedMessage && selectedMessage.id === msgId) {
+      setSelectedMessage((prev) => ({ ...prev, status: newStatus }));
     }
   };
 
@@ -49,12 +61,22 @@ export default function DashboardInboxPage({ setActivePage }) {
     e.preventDefault();
     if (!replyText) return;
 
+    if (selectedMessage) {
+      handleUpdateStatus(selectedMessage.id, 'responding');
+    }
+
     setReplySent(true);
     setTimeout(() => {
       setReplySent(false);
       setReplyText('');
     }, 1500);
   };
+
+  const filteredMessages = messages.filter((m) => {
+    const msgStatus = m.status || (!m.read ? 'new' : 'read');
+    if (statusFilter === 'all') return true;
+    return msgStatus === statusFilter;
+  });
 
   return (
     <div className="space-y-8 pb-20 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 font-sans desk-grid-background">
@@ -103,33 +125,65 @@ export default function DashboardInboxPage({ setActivePage }) {
           </p>
         </div>
 
+        {/* State Filter Pills (Slice 6 requirement) */}
+        <div className="flex flex-wrap items-center gap-1.5 pb-2 border-b border-slate-200">
+          {['all', 'new', 'read', 'responding', 'quoted', 'closed'].map((st) => (
+            <button
+              key={st}
+              onClick={() => setStatusFilter(st)}
+              className={`px-2.5 py-1 rounded-lg text-xs font-mono font-black uppercase transition-all cursor-pointer ${
+                statusFilter === st
+                  ? 'bg-slate-900 text-white shadow-[2px_2px_0px_0px_#059669]'
+                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300'
+              }`}
+            >
+              {st} {st !== 'all' && `(${messages.filter(m => (m.status || (!m.read ? 'new' : 'read')) === st).length})`}
+            </button>
+          ))}
+        </div>
+
         {/* Message List & Reader Grid */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6 pt-2">
           
           {/* List Column */}
           <div className="md:col-span-5 space-y-3">
-            {messages.map((msg) => (
-              <div
-                key={msg.id}
-                onClick={() => handleSelectMessage(msg)}
-                className={`p-4 rounded-2xl border-2 transition-all cursor-pointer space-y-1.5 ${
-                  selectedMessage?.id === msg.id
-                    ? 'bg-amber-200 border-slate-900 shadow-[3px_3px_0px_0px_#0f172a]'
-                    : !msg.read
-                    ? 'bg-emerald-50 border-slate-900 font-extrabold shadow-[2px_2px_0px_0px_#0f172a]'
-                    : 'bg-white border-slate-300 hover:border-slate-900'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-black text-slate-900">{msg.sender_name}</span>
-                  {!msg.read && (
-                    <span className="w-2 h-2 rounded-full bg-emerald-600" />
-                  )}
-                </div>
-                <p className="text-xs font-black text-slate-900 truncate">{msg.subject || 'Profile Contact'}</p>
-                <p className="text-[11px] font-bold text-slate-600 line-clamp-2">{msg.message}</p>
+            {filteredMessages.length === 0 ? (
+              <div className="p-8 text-center text-xs font-mono font-bold text-slate-500 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-300">
+                No messages found in '{statusFilter}' status.
               </div>
-            ))}
+            ) : (
+              filteredMessages.map((msg) => {
+                const currStatus = msg.status || (!msg.read ? 'new' : 'read');
+                return (
+                  <div
+                    key={msg.id}
+                    onClick={() => handleSelectMessage(msg)}
+                    className={`p-4 rounded-2xl border-2 transition-all cursor-pointer space-y-1.5 ${
+                      selectedMessage?.id === msg.id
+                        ? 'bg-amber-200 border-slate-900 shadow-[3px_3px_0px_0px_#0f172a]'
+                        : !msg.read
+                        ? 'bg-emerald-50 border-slate-900 font-extrabold shadow-[2px_2px_0px_0px_#0f172a]'
+                        : 'bg-white border-slate-300 hover:border-slate-900'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-black text-slate-900">{msg.sender_name}</span>
+                      <span className={`text-[9px] font-mono font-black uppercase px-1.5 py-0.5 rounded border ${
+                        currStatus === 'new' ? 'bg-emerald-200 text-emerald-950 border-emerald-400' :
+                        currStatus === 'quoted' ? 'bg-purple-200 text-purple-950 border-purple-400' :
+                        currStatus === 'responding' ? 'bg-blue-200 text-blue-950 border-blue-400' :
+                        currStatus === 'closed' ? 'bg-slate-200 text-slate-700 border-slate-400' :
+                        'bg-slate-100 text-slate-700 border-slate-300'
+                      }`}>
+                        {currStatus}
+                      </span>
+                    </div>
+                    <p className="text-xs font-black text-slate-900 truncate">{msg.subject || 'Profile Contact'}</p>
+                    <p className="text-[11px] font-bold text-slate-600 line-clamp-2">{msg.message}</p>
+                  </div>
+                );
+              })
+            )}
           </div>
 
           {/* Reader / Response Column */}
@@ -139,7 +193,9 @@ export default function DashboardInboxPage({ setActivePage }) {
                 <div className="border-b-2 border-slate-900/40 pb-3 space-y-1">
                   <div className="flex items-center justify-between">
                     <h3 className="text-base font-black text-slate-900">{selectedMessage.sender_name}</h3>
-                    <span className="text-[10px] font-mono font-bold text-slate-500">{new Date(selectedMessage.created_at).toLocaleDateString()}</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] font-mono font-bold text-slate-500">{new Date(selectedMessage.created_at).toLocaleDateString()}</span>
+                    </div>
                   </div>
                   <p className="text-xs font-mono font-bold text-slate-600">{selectedMessage.sender_email}</p>
                   {selectedMessage.company && (
@@ -147,12 +203,30 @@ export default function DashboardInboxPage({ setActivePage }) {
                       {selectedMessage.company}
                     </span>
                   )}
+                  {/* Supplier Stage Transition Buttons */}
+                  <div className="flex flex-wrap items-center gap-1.5 pt-2">
+                    <span className="text-[10px] font-mono font-black uppercase text-slate-600">Stage:</span>
+                    {['responding', 'quoted', 'closed'].map((st) => (
+                      <button
+                        key={st}
+                        type="button"
+                        onClick={() => handleUpdateStatus(selectedMessage.id, st)}
+                        className={`text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded border cursor-pointer transition-all ${
+                          (selectedMessage.status || 'read') === st
+                            ? 'bg-slate-900 text-white border-slate-900 font-black'
+                            : 'bg-white hover:bg-slate-100 text-slate-800 border-slate-400'
+                        }`}
+                      >
+                        Mark as {st}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 <div className="space-y-1">
                   <h4 className="text-xs font-mono font-black uppercase text-slate-900">Message Body:</h4>
-                  <p className="text-xs font-bold text-slate-900 leading-relaxed bg-white p-4 rounded-xl border border-slate-900">
-                    "{selectedMessage.message}"
+                  <p className="text-xs font-bold text-slate-900 leading-relaxed bg-white p-4 rounded-xl border border-slate-900 whitespace-pre-line">
+                    {selectedMessage.message}
                   </p>
                 </div>
 

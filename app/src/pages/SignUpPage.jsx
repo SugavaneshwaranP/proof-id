@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShieldCheck, ArrowRight, Paperclip, CheckCircle2, User, Mail, Lock, AlertCircle, Loader2 } from 'lucide-react';
 import { authService } from '../lib/authService';
+import { saveOnboardingDraft } from '../lib/onboardingDraft';
 
 export default function SignUpPage({ setActivePage, onOpenAuth }) {
   const [fullName, setFullName] = useState('');
@@ -29,6 +30,13 @@ export default function SignUpPage({ setActivePage, onOpenAuth }) {
         email,
         password,
         profileType: 'person',
+      });
+      // Seed onboarding draft state so first-time users don't re-enter name/email
+      saveOnboardingDraft({
+        fullName,
+        contactMethod: email,
+        slug: fullName.toLowerCase().replace(/[^a-z0-9_-]/g, '') || 'alexrivera',
+        stepIndex: 1
       });
       setAccountCreated(true);
       setTimeout(() => {

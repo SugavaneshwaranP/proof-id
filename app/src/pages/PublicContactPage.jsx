@@ -28,14 +28,14 @@ export default function PublicContactPage({ name = 'Alex Rivera', slug = 'alexri
   };
 
   return (
-    <div className="space-y-8 pb-20 max-w-xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 font-sans desk-grid-background">
+    <div className="space-y-6 pb-20 max-w-xl mx-auto px-3 sm:px-6 lg:px-8 pt-6 font-sans desk-grid-background">
       
       {/* Top Navigation Back Action */}
       <div className="flex items-center justify-between">
         <button
           type="button"
           onClick={() => setActivePage ? setActivePage('public-profile') : window.history.back()}
-          className="text-xs font-mono font-black text-slate-900 bg-white px-3.5 py-2 rounded-xl border-2 border-slate-900 shadow-[2px_2px_0px_0px_#0f172a] hover:bg-slate-100 flex items-center gap-1.5 cursor-pointer"
+          className="text-xs font-mono font-black text-slate-900 bg-white px-3 py-2 rounded-xl border-2 border-slate-900 shadow-[2px_2px_0px_0px_#0f172a] hover:bg-slate-100 flex items-center gap-1.5 cursor-pointer min-h-[40px]"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Back to Profile</span>
@@ -45,7 +45,8 @@ export default function PublicContactPage({ name = 'Alex Rivera', slug = 'alexri
       </div>
 
       {/* Main Tactile Dossier Container */}
-      <div className="dossier-card rounded-3xl p-6 sm:p-10 border-3 border-slate-900 shadow-[8px_8px_0px_0px_#0f172a] relative overflow-hidden bg-[#a7f3d0] text-slate-900">
+      <div className="dossier-card rounded-3xl p-4 sm:p-8 md:p-10 border-3 border-slate-900 shadow-[6px_6px_0px_0px_#0f172a] sm:shadow-[8px_8px_0px_0px_#0f172a] relative overflow-hidden bg-[#a7f3d0] text-slate-900">
+
         
         {/* Top Metallic Clip */}
         <div className="dossier-clip">

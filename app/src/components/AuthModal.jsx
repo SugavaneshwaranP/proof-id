@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ShieldCheck, Mail, ArrowRight, User, Building2, CheckCircle2, Lock, Paperclip, AlertCircle, Loader2 } from 'lucide-react';
 import { authService } from '../lib/authService';
+import { saveOnboardingDraft } from '../lib/onboardingDraft';
 
 export default function AuthModal({ isOpen, onClose, defaultType = 'person', onComplete }) {
   const [step, setStep] = useState(1); // 1: Type & Email, 2: Claim Slug, 3: Success
@@ -30,6 +31,13 @@ export default function AuthModal({ isOpen, onClose, defaultType = 'person', onC
           password: password,
           profileType: profileType,
           slug: slug,
+        });
+        saveOnboardingDraft({
+          profileType: profileType,
+          fullName: name,
+          contactMethod: email,
+          slug: slug,
+          stepIndex: 1
         });
         setStep(3);
       } catch (err) {

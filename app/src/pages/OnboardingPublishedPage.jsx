@@ -136,20 +136,27 @@ export default function OnboardingPublishedPage({ setActivePage, slug = 'alexriv
             </div>
           </div>
 
-          {/* Go to my dashboard Button */}
-          <div className="pt-4">
+          {/* View Public Page & Go to Dashboard Buttons */}
+          <div className="pt-4 flex flex-col sm:flex-row items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setActivePage('public-profile')}
+              className="w-full sm:w-1/2 py-3.5 sm:py-4 rounded-2xl bg-emerald-400 hover:bg-emerald-300 text-slate-900 font-black text-xs sm:text-sm uppercase tracking-wider shadow-[4px_4px_0px_0px_#0f172a] border-2 border-slate-900 transition-all cursor-pointer flex items-center justify-center gap-2 min-h-[44px]"
+            >
+              <span>View Live Public Page</span>
+              <ArrowRight className="w-4 h-4 text-slate-900" />
+            </button>
+
             <button
               type="button"
               onClick={() => setActivePage('dashboard')}
-              className="w-full py-4 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-black text-base shadow-[5px_5px_0px_0px_#059669] border-2 border-slate-900 transition-all cursor-pointer flex items-center justify-center gap-3"
+              className="w-full sm:w-1/2 py-3.5 sm:py-4 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-black text-xs sm:text-sm uppercase tracking-wider shadow-[4px_4px_0px_0px_#059669] border-2 border-slate-900 transition-all cursor-pointer flex items-center justify-center gap-2 min-h-[44px]"
             >
               <span>Go to my dashboard</span>
-              <ArrowRight className="w-5 h-5 text-emerald-300" />
+              <ArrowRight className="w-4 h-4 text-emerald-300" />
             </button>
           </div>
-
         </div>
-
       </div>
 
       {/* QR Code Modal */}

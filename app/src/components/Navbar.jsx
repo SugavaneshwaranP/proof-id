@@ -37,7 +37,7 @@ export default function Navbar({ activePage, setActivePage, onOpenAuth, onScroll
   };
 
   return (
-    <header className="sticky top-0 z-50 glass-panel border-b-3 border-slate-900 bg-[#f7f5f0]">
+    <header className="sticky top-0 z-50 glass-panel border-b-3 border-slate-900 bg-[#f7f5f0] no-print">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
           

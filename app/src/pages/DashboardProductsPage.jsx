@@ -26,15 +26,15 @@ export default function DashboardProductsPage({ setActivePage }) {
   }, [slug]);
 
   const handleAddProduct = (e) => {
-    e.preventDefault();
-    if (!productName || !description) return;
+    if (e) e.preventDefault();
+    if (!productName.trim()) return;
 
     dbStore.addProduct(slug, {
-      title: productName,
-      category: category || 'Industrial Component',
-      description,
-      min_order_qty: moq || '10 units',
-      lead_time: leadTime || '7 business days',
+      title: productName.trim(),
+      category: category.trim() || 'Industrial Component',
+      description: description.trim() || 'Custom manufactured component built to customer engineering specifications.',
+      min_order_qty: moq.trim() || '10 units',
+      lead_time: leadTime.trim() || '7 business days',
       price_range: "$500 - $1,500",
       image_url: "https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&q=80&w=400",
     });
@@ -47,10 +47,11 @@ export default function DashboardProductsPage({ setActivePage }) {
   };
 
   return (
-    <div className="space-y-8 pb-20 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 font-sans desk-grid-background">
+    <div className="space-y-6 pb-20 max-w-4xl mx-auto px-3 sm:px-6 lg:px-8 pt-6 font-sans desk-grid-background">
       
       {/* Main Dossier Container */}
-      <div className="dossier-card rounded-3xl p-6 sm:p-10 border-3 border-slate-900 shadow-[8px_8px_0px_0px_#0f172a] relative overflow-hidden bg-[#ffedd5] text-slate-900 space-y-6">
+      <div className="dossier-card rounded-3xl p-4 sm:p-8 md:p-10 border-3 border-slate-900 shadow-[6px_6px_0px_0px_#0f172a] sm:shadow-[8px_8px_0px_0px_#0f172a] relative overflow-hidden bg-[#ffedd5] text-slate-900 space-y-5">
+
         
         {/* Top Metallic Clip */}
         <div className="dossier-clip">

@@ -276,3 +276,59 @@
   background: #0f172a;
   border-radius: 4px;
 }
+
+/* Touch targets & responsive utilities (<375px) */
+@media (max-width: 375px) {
+  .pill-header {
+    font-size: 0.65rem !important;
+  }
+}
+
+/* CRITERION 7: LOGIN-FREE SHAREABILITY - PRINT & PDF EXPORT STYLESHEET */
+@media print {
+  /* Hide navigation, debug bars, floating controls, and footers */
+  .no-print,
+  header,
+  nav,
+  footer,
+  .realtime-bar,
+  button,
+  .dossier-clip,
+  .tape-strip {
+    display: none !important;
+  }
+
+  body,
+  .desk-grid-background {
+    background: #ffffff !important;
+    background-image: none !important;
+    color: #0f172a !important;
+    font-size: 10.5pt !important;
+  }
+
+  .dossier-card,
+  .dossier-card-yellow,
+  .dossier-card-mint,
+  .dossier-card-pink,
+  .dossier-card-peach,
+  .dossier-card-blue {
+    border: 1.5px solid #0f172a !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+    color: #0f172a !important;
+    page-break-inside: avoid !important;
+    padding: 1.25rem !important;
+  }
+
+  .stamp-verified {
+    border: 1.5px solid #047857 !important;
+    color: #047857 !important;
+    background: #ecfdf5 !important;
+    box-shadow: none !important;
+  }
+
+  a {
+    color: inherit !important;
+    text-decoration: underline !important;
+  }
+}

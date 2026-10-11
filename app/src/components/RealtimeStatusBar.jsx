@@ -53,7 +53,7 @@ export default function RealtimeStatusBar({ profileId = 'alexrivera-id' }) {
   };
 
   return (
-    <div className="bg-slate-900 text-white border-b-2 border-slate-900 px-4 py-2 font-mono text-[11px] shadow-sm">
+    <div className="bg-slate-900 text-white border-b-2 border-slate-900 px-4 py-2 font-mono text-[11px] shadow-sm no-print">
       <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
         
         {/* Left: Status Indicator */}

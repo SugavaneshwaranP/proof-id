@@ -3,7 +3,7 @@ import { ShieldCheck } from 'lucide-react';
 
 export default function Footer({ setActivePage }) {
   return (
-    <footer className="bg-[#f0ece1] border-t-3 border-slate-900 py-12 text-slate-900 font-sans">
+    <footer className="bg-[#f0ece1] border-t-3 border-slate-900 py-12 text-slate-900 font-sans no-print">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
         
         {/* Logo & Product links */}

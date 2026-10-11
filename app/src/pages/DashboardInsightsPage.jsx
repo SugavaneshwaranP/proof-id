@@ -1,9 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { 
-  BarChart3, TrendingUp, Eye, Users, MessageSquare, Share2, 
-  Calendar, Globe, Paperclip, ArrowRight, Compass, Sparkles 
-} from 'lucide-react';
+import { Paperclip } from 'lucide-react';
 import { dbStore } from '../lib/dbStore';
 import { authService } from '../lib/authService';
 

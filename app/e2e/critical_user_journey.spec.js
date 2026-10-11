@@ -7,7 +7,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('ProofID Critical E2E Acceptance Flow', () => {
 
-  test('Complete Journey: Landing -> Incognito Public Dossier -> Contact -> Mobile <375px', async ({ page, context }) => {
+  test('Complete Journey: Landing -> Incognito Public Dossier -> Contact -> Mobile <375px', async ({ page }) => {
     // 1. Visit Home Landing Page
     await page.goto('/');
     await expect(page).toHaveTitle(/Backed/);

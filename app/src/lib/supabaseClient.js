@@ -30,15 +30,15 @@ export const supabase = createClient(
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true,
-      storage: window.localStorage,
+      storage: typeof window !== "undefined" ? window.localStorage : undefined,
       storageKey: "backed-auth-token",
       flowType: "pkce",
     },
-    realtime: {
+    realtime: typeof WebSocket !== "undefined" ? {
       params: {
         eventsPerSecond: 10,
       },
-    },
+    } : undefined,
   }
 );
 

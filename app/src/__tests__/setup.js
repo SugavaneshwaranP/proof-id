@@ -50,3 +50,23 @@ if (typeof globalThis.window === "undefined") {
   globalThis.window.localStorage = memLocalStorage;
   globalThis.window.sessionStorage = memSessionStorage;
 }
+
+class MockWebSocket {
+  constructor(url) {
+    this.url = url;
+    this.readyState = 1;
+    this.CONNECTING = 0;
+    this.OPEN = 1;
+    this.CLOSING = 2;
+    this.CLOSED = 3;
+  }
+  addEventListener() {}
+  removeEventListener() {}
+  send() {}
+  close() {}
+}
+
+globalThis.WebSocket = MockWebSocket;
+if (typeof globalThis.window !== "undefined") {
+  globalThis.window.WebSocket = MockWebSocket;
+}

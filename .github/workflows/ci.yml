@@ -25,7 +25,7 @@ jobs:
 
       - name: Install Application Dependencies
         working-directory: ./app
-        run: npm ci
+        run: npm install
 
       - name: Static Code Analysis & Linter
         working-directory: ./app

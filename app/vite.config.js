@@ -6,6 +6,7 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   test: {
     globals: true,
-    environment: 'happy-dom',
+    environment: 'node',
+    setupFiles: ['./src/__tests__/setup.js'],
   },
 })

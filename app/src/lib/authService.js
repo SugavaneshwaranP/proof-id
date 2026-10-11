@@ -149,6 +149,13 @@ export const authService = {
   },
 
   /**
+   * Official Supabase naming alias for password sign-in
+   */
+  signInWithPassword: async (credentials) => {
+    return authService.signIn(credentials);
+  },
+
+  /**
    * Production OAuth Sign In via Supabase Auth (GitHub or Google)
    */
   signInWithOAuth: async (provider = "github") => {
@@ -164,6 +171,14 @@ export const authService = {
     }
 
     return data;
+  },
+
+  signInWithGoogle: async () => {
+    return authService.signInWithOAuth("google");
+  },
+
+  signInWithGithub: async () => {
+    return authService.signInWithOAuth("github");
   },
 
   /**

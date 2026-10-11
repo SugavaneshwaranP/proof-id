@@ -44,6 +44,7 @@ describe("AuthService Production Hardening", () => {
         data: {
           full_name: "Test User",
           profile_type: "person",
+          slug: "test",
         },
       },
     });

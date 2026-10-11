@@ -1,29 +1,48 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ShieldCheck, Mail, ArrowRight, User, Building2, CheckCircle2, Lock, Paperclip } from 'lucide-react';
+import { X, ShieldCheck, Mail, ArrowRight, User, Building2, CheckCircle2, Lock, Paperclip, AlertCircle, Loader2 } from 'lucide-react';
+import { authService } from '../lib/authService';
 
-export default function AuthModal({ isOpen, onClose, defaultType = 'person' }) {
+export default function AuthModal({ isOpen, onClose, defaultType = 'person', onComplete }) {
   const [step, setStep] = useState(1); // 1: Type & Email, 2: Claim Slug, 3: Success
   const [profileType, setProfileType] = useState(defaultType);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('password123');
   const [slug, setSlug] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   if (!isOpen) return null;
 
-  const handleNext = (e) => {
+  const handleNext = async (e) => {
     e.preventDefault();
+    setErrorMessage('');
     if (step === 1 && email && name) {
       setSlug(name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-'));
       setStep(2);
     } else if (step === 2 && slug) {
-      setStep(3);
+      setIsSubmitting(true);
+      try {
+        await authService.signUp({
+          fullName: name,
+          email: email,
+          password: password,
+          profileType: profileType,
+          slug: slug,
+        });
+        setStep(3);
+      } catch (err) {
+        setErrorMessage(err.message || 'Failed to create page account.');
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md font-sans">
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 10 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -39,7 +58,7 @@ export default function AuthModal({ isOpen, onClose, defaultType = 'person' }) {
           {/* Close button */}
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 p-2 rounded-xl text-slate-700 hover:text-slate-900 hover:bg-slate-200 transition-colors border-2 border-slate-900 font-bold"
+            className="absolute top-4 right-4 p-2 rounded-xl text-slate-700 hover:text-slate-900 hover:bg-slate-200 transition-colors border-2 border-slate-900 font-bold cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -54,6 +73,14 @@ export default function AuthModal({ isOpen, onClose, defaultType = 'person' }) {
               <p className="text-xs font-mono font-bold text-slate-600">100% Deterministic • Real Proof Backed</p>
             </div>
           </div>
+
+          {/* ERROR BANNER */}
+          {errorMessage && (
+            <div className="mb-4 p-3 rounded-xl bg-red-100 border-2 border-slate-900 text-red-900 text-xs font-bold flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+              <span>{errorMessage}</span>
+            </div>
+          )}
 
           {step === 1 && (
             <form onSubmit={handleNext} className="space-y-5">
@@ -148,10 +175,20 @@ export default function AuthModal({ isOpen, onClose, defaultType = 'person' }) {
 
               <button
                 type="submit"
-                className="w-full py-3.5 rounded-xl bg-amber-300 hover:bg-amber-400 text-slate-900 font-black text-sm shadow-[4px_4px_0px_0px_#0f172a] border-2 border-slate-900 flex items-center justify-center gap-2 cursor-pointer"
+                disabled={isSubmitting}
+                className="w-full py-3.5 rounded-xl bg-amber-300 hover:bg-amber-400 text-slate-900 font-black text-sm shadow-[4px_4px_0px_0px_#0f172a] border-2 border-slate-900 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
               >
-                <span>Reserve Slug & Build Page</span>
-                <ArrowRight className="w-4 h-4 text-slate-900" />
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-slate-900" />
+                    <span>Reserving & Registering...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Reserve Slug & Build Page</span>
+                    <ArrowRight className="w-4 h-4 text-slate-900" />
+                  </>
+                )}
               </button>
             </form>
           )}
@@ -166,10 +203,13 @@ export default function AuthModal({ isOpen, onClose, defaultType = 'person' }) {
                 Canonical URL: <span className="font-mono text-slate-900 bg-amber-200 px-2 py-0.5 rounded border border-slate-900">backed.network/{slug}</span>
               </p>
               <button
-                onClick={onClose}
+                onClick={() => {
+                  onClose();
+                  if (onComplete) onComplete(slug);
+                }}
                 className="w-full py-3.5 rounded-xl bg-slate-900 text-white font-black text-sm shadow-[4px_4px_0px_0px_#0f172a] border-2 border-slate-900 cursor-pointer"
               >
-                Launch Page Editor
+                Launch Page Editor & Onboarding
               </button>
             </div>
           )}

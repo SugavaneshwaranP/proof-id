@@ -5,230 +5,106 @@ import {
   Trash2, Bell, Shield, Eye, Check, RefreshCw, Zap
 } from 'lucide-react';
 import { subscribeToAdminReportsChannel } from '../lib/realtime';
+import { dbStore } from '../lib/dbStore';
 
 export default function AdminReportsPage({ setActivePage, onOpenEvidence }) {
-  const [activeFilter, setActiveFilter] = useState('All');
+  const [reports, setReports] = useState(() => dbStore.getReports());
   const [liveToast, setLiveToast] = useState(null);
-  const [reports, setReports] = useState([
-    {
-      id: 101,
-      page: 'backed.app/fake-dev-99',
-      reason: 'Fake or misleading proof',
-      reportedOn: 'Oct 8, 2026',
-      status: 'Pending Review',
-      details: 'Attached ISO 9001 certificate belongs to a different firm.'
-    },
-    {
-      id: 102,
-      page: 'backed.app/impostor-corp',
-      reason: 'Pretending to be someone else',
-      reportedOn: 'Oct 6, 2026',
-      status: 'Warned',
-      details: 'Using trademarked brand logos without authorization.'
-    },
-    {
-      id: 103,
-      page: 'backed.app/spam-link-20',
-      reason: 'Inappropriate content',
-      reportedOn: 'Oct 2, 2026',
-      status: 'Dismissed',
-      details: 'False positive flag submitted by competitor.'
-    }
-  ]);
 
-  // Subscribe to real-time moderation reports channel
   useEffect(() => {
-    const unsubscribe = subscribeToAdminReportsChannel((newReport) => {
-      setReports((prev) => [newReport, ...prev]);
-      setLiveToast(`New report filed for ${newReport.page || 'a public profile'}!`);
+    const load = () => setReports(dbStore.getReports());
+    load();
+    const unsubStore = dbStore.onSync(load);
+    const unsubRealtime = subscribeToAdminReportsChannel((newReport) => {
+      load();
+      setLiveToast(`New moderation report filed for ${newReport.target_slug || 'a page'}!`);
       setTimeout(() => setLiveToast(null), 4000);
     });
 
     return () => {
-      if (typeof unsubscribe === 'function') unsubscribe();
+      unsubStore();
+      if (typeof unsubRealtime === 'function') unsubRealtime();
     };
   }, []);
 
-  const filteredReports = reports.filter((r) => {
-    if (activeFilter === 'Pending') return r.status === 'Pending Review';
-    if (activeFilter === 'Warned') return r.status === 'Warned';
-    if (activeFilter === 'Dismissed') return r.status === 'Dismissed';
-    return true;
-  });
-
-  const handleDismiss = (id) => {
-    setReports(reports.map((r) => r.id === id ? { ...r, status: 'Dismissed' } : r));
-  };
-
-  const handleWarn = (id) => {
-    setReports(reports.map((r) => r.id === id ? { ...r, status: 'Warned' } : r));
-    alert('Warning email sent to profile owner.');
-  };
-
-  const handleTakeDown = (id) => {
-    setReports(reports.filter((r) => r.id !== id));
-    alert('Page taken down and unlisted from public discovery.');
-  };
-
   return (
-    <div className="space-y-8 pb-20 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 font-sans desk-grid-background">
+    <div className="space-y-8 pb-20 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 font-sans desk-grid-background">
       
-      {/* Realtime Alert Banner */}
+      {/* Realtime WebSocket Incoming Report Alert */}
       <AnimatePresence>
         {liveToast && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="bg-red-500 text-white p-4 rounded-2xl border-3 border-slate-900 shadow-[4px_4px_0px_0px_#0f172a] flex items-center justify-between gap-3"
+            className="bg-red-300 text-slate-900 p-4 rounded-2xl border-3 border-slate-900 shadow-[4px_4px_0px_0px_#0f172a] flex items-center justify-between gap-3 font-black text-sm"
           >
-            <div className="flex items-center gap-2.5 font-black text-xs">
-              <Zap className="w-4 h-4 text-yellow-300 animate-bounce" />
-              <span>[REALTIME WS: admin:reports] — {liveToast}</span>
+            <div className="flex items-center gap-2">
+              <Zap className="w-5 h-5 text-slate-900 fill-slate-900 animate-bounce" />
+              <span>{liveToast}</span>
             </div>
-            <span className="stamp-verified text-[9px] py-0.5 px-2 bg-slate-900 text-emerald-300 border-none">LIVE FEED</span>
+            <span className="text-xs font-mono font-bold bg-slate-900 text-white px-2.5 py-1 rounded-lg uppercase">
+              REAL-TIME MODERATION QUEUE
+            </span>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Main Tactile Dossier Container */}
-      <div className="dossier-card rounded-3xl p-6 sm:p-10 border-3 border-slate-900 shadow-[8px_8px_0px_0px_#0f172a] relative overflow-hidden bg-[#ffedd5] text-slate-900">
+      {/* Main Dossier Container */}
+      <div className="dossier-card rounded-3xl p-6 sm:p-10 border-3 border-slate-900 shadow-[8px_8px_0px_0px_#0f172a] relative overflow-hidden bg-white text-slate-900 space-y-6">
         
         {/* Top Metallic Clip */}
-        <div className="dossier-clip">
-          <Paperclip className="w-3.5 h-3.5 text-amber-300" />
-          <span>ADMIN MODERATION DOSSIER</span>
+        <div className="flex items-center justify-between border-b-2 border-slate-900 pb-4">
+          <div className="dossier-clip relative top-0 left-0">
+            <Paperclip className="w-3.5 h-3.5 text-amber-300" />
+            <span className="uppercase font-mono font-black">ADMIN MODERATION QUEUE</span>
+          </div>
+          <span className="text-xs font-mono font-extrabold text-slate-600">
+            {reports.length} TICKETS
+          </span>
         </div>
 
-        {/* Header */}
-        <div className="text-center space-y-2 pb-6 border-b-2 border-slate-900/60">
-          <span className="pill-header inline-block text-xs font-mono bg-red-200 text-slate-900">
-            Platform Moderation
-          </span>
-          <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight pt-1">
-            “Reports”
+        {/* Title */}
+        <div className="space-y-1">
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+            <ShieldAlert className="w-6 h-6 text-red-600" />
+            <span>“Admin Moderation & Audit Queue”</span>
           </h1>
-          <p className="text-sm font-extrabold text-slate-800">
-            Where the team reviews pages people have flagged.
+          <p className="text-xs font-bold text-slate-700">
+            Real-time audit log of flagged claims and user reports.
           </p>
         </div>
 
-        {/* Status Filters Bar */}
-        <div className="pt-6 flex items-center justify-between gap-4 border-b-2 border-slate-900/20 pb-4">
-          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
-            {['All', 'Pending', 'Warned', 'Dismissed'].map((filter) => (
-              <button
-                key={filter}
-                type="button"
-                onClick={() => setActiveFilter(filter)}
-                className={`px-4 py-2 rounded-xl font-mono text-xs font-black border-2 transition-all cursor-pointer whitespace-nowrap ${
-                  activeFilter === filter
-                    ? 'bg-slate-900 text-white border-slate-900 shadow-[3px_3px_0px_0px_#059669]'
-                    : 'bg-white hover:bg-slate-100 text-slate-900 border-slate-900/40 hover:border-slate-900 shadow-[2px_2px_0px_0px_#0f172a]'
-                }`}
-              >
-                • {filter}
-              </button>
-            ))}
-          </div>
+        {/* Reports List */}
+        <div className="space-y-4 pt-2">
+          {reports.map((rep) => (
+            <div
+              key={rep.id}
+              className="bg-red-50 p-5 rounded-2xl border-2 border-slate-900 shadow-[4px_4px_0px_0px_#0f172a] space-y-3"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-mono font-black text-slate-900 uppercase bg-red-200 px-2.5 py-0.5 rounded border border-slate-900">
+                  Target: {rep.target_slug}
+                </span>
+                <span className="text-[10px] font-mono font-bold text-slate-500">
+                  {new Date(rep.created_at).toLocaleDateString()}
+                </span>
+              </div>
 
-          <span className="text-xs font-mono font-black text-slate-700 uppercase">
-            {filteredReports.length} REPORTS LISTED
-          </span>
-        </div>
+              <h4 className="text-sm font-black text-slate-900">Reason: {rep.reason}</h4>
+              <p className="text-xs font-bold text-slate-700">Reporter: {rep.reporter || 'System Audit'}</p>
 
-        {/* Reports Table & Empty State */}
-        <div className="pt-6">
-          {filteredReports.length === 0 ? (
-            <div className="bg-white p-12 rounded-3xl border-3 border-dashed border-slate-900 text-center space-y-3">
-              <CheckCircle2 className="w-12 h-12 text-emerald-600 mx-auto" />
-              <h3 className="text-xl font-black text-slate-900">Nothing to review right now.</h3>
-              <p className="text-xs font-extrabold text-slate-700">All flagged pages have been moderated.</p>
-            </div>
-          ) : (
-            <div className="bg-white rounded-2xl border-3 border-slate-900 shadow-[6px_6px_0px_0px_#0f172a] overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-slate-900 text-white font-mono text-xs font-black uppercase border-b-2 border-slate-900">
-                      <th className="p-4">Page</th>
-                      <th className="p-4">Reason</th>
-                      <th className="p-4">Reported on</th>
-                      <th className="p-4">Status</th>
-                      <th className="p-4 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y-2 divide-slate-900/10 text-xs font-bold text-slate-900">
-                    <AnimatePresence>
-                      {filteredReports.map((report) => (
-                        <motion.tr
-                          key={report.id}
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          className="hover:bg-amber-50 transition-colors"
-                        >
-                          <td className="p-4 font-mono font-black text-slate-900">
-                            {report.page}
-                          </td>
-                          <td className="p-4">
-                            <span className="bg-amber-100 text-amber-900 px-2.5 py-1 rounded-lg border border-slate-900 font-extrabold">
-                              {report.reason}
-                            </span>
-                            <p className="text-[11px] text-slate-600 font-normal pt-1">{report.details}</p>
-                          </td>
-                          <td className="p-4 font-mono text-slate-600">
-                            {report.reportedOn}
-                          </td>
-                          <td className="p-4">
-                            <span className={`px-2.5 py-1 rounded-lg border text-[10px] font-mono font-black ${
-                              report.status === 'Pending Review' ? 'bg-red-200 text-red-900 border-slate-900' :
-                              report.status === 'Warned' ? 'bg-amber-200 text-amber-900 border-slate-900' :
-                              'bg-slate-200 text-slate-700 border-slate-900'
-                            }`}>
-                              {report.status}
-                            </span>
-                          </td>
-                          <td className="p-4 text-right">
-                            <div className="flex items-center justify-end gap-1.5 flex-wrap">
-                              
-                              {/* Dismiss */}
-                              <button
-                                type="button"
-                                onClick={() => handleDismiss(report.id)}
-                                className="px-2.5 py-1.5 rounded-lg border border-slate-900 bg-white hover:bg-slate-100 text-[11px] font-mono font-black shadow-[1px_1px_0px_0px_#0f172a]"
-                              >
-                                Dismiss
-                              </button>
-
-                              {/* Warn owner */}
-                              <button
-                                type="button"
-                                onClick={() => handleWarn(report.id)}
-                                className="px-2.5 py-1.5 rounded-lg border border-slate-900 bg-amber-300 hover:bg-amber-400 text-slate-900 text-[11px] font-mono font-black shadow-[1px_1px_0px_0px_#0f172a]"
-                              >
-                                Warn owner
-                              </button>
-
-                              {/* Take page down */}
-                              <button
-                                type="button"
-                                onClick={() => handleTakeDown(report.id)}
-                                className="px-2.5 py-1.5 rounded-lg border border-slate-900 bg-red-600 hover:bg-red-700 text-white text-[11px] font-mono font-black shadow-[1px_1px_0px_0px_#0f172a]"
-                              >
-                                Take page down
-                              </button>
-
-                            </div>
-                          </td>
-                        </motion.tr>
-                      ))}
-                    </AnimatePresence>
-                  </tbody>
-                </table>
+              <div className="flex items-center gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => alert(`Review ticket #${rep.id} closed.`)}
+                  className="px-3 py-1.5 rounded-xl bg-slate-900 text-white font-black text-xs border-2 border-slate-900 shadow-[2px_2px_0px_0px_#0f172a] cursor-pointer"
+                >
+                  Mark Reviewed
+                </button>
               </div>
             </div>
-          )}
+          ))}
         </div>
 
       </div>

@@ -1,19 +1,53 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { ShieldCheck, Mail, Lock, ArrowRight, Paperclip, CheckCircle2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ShieldCheck, Mail, Lock, ArrowRight, Paperclip, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { authService } from '../lib/authService';
 
 export default function LoginPage({ setActivePage, onOpenAuth }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loggedIn, setLoggedIn] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setErrorMessage('');
     if (!email || !password) return;
-    setLoggedIn(true);
-    setTimeout(() => {
-      setActivePage('explorer');
-    }, 1200);
+
+    setIsSubmitting(true);
+    try {
+      await authService.signIn({ email, password });
+      setLoggedIn(true);
+      setTimeout(() => {
+        setActivePage('dashboard');
+      }, 1000);
+    } catch (err) {
+      setErrorMessage(err.message || 'Login failed. Please check your credentials.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setErrorMessage('');
+    setIsSubmitting(true);
+    try {
+      await authService.signInWithGoogle();
+      setLoggedIn(true);
+      setTimeout(() => {
+        setActivePage('dashboard');
+      }, 1000);
+    } catch (err) {
+      setErrorMessage(err.message || 'Google sign in failed.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleQuickLogin = (demoEmail, demoPass) => {
+    setEmail(demoEmail);
+    setPassword(demoPass);
   };
 
   return (
@@ -46,9 +80,45 @@ export default function LoginPage({ setActivePage, onOpenAuth }) {
             “Welcome back”
           </h1>
           <p className="text-sm font-extrabold text-slate-800">
-            Log in to manage your page.
+            Log in to manage your real-time verified page.
           </p>
         </div>
+
+        {/* Quick Credentials Suggestion */}
+        <div className="mt-4 p-3 bg-amber-100 rounded-2xl border-2 border-slate-900 text-xs font-bold text-slate-900 flex flex-wrap items-center justify-between gap-2 shadow-[2px_2px_0px_0px_#0f172a]">
+          <span className="font-mono text-[11px] font-black uppercase text-amber-900">Quick Test Accounts:</span>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => handleQuickLogin('alex@example.com', 'password123')}
+              className="px-2.5 py-1 rounded-lg bg-white border border-slate-900 text-[11px] font-mono hover:bg-amber-200 cursor-pointer"
+            >
+              alex@example.com
+            </button>
+            <button
+              type="button"
+              onClick={() => handleQuickLogin('contact@apexdynamics.com', 'password123')}
+              className="px-2.5 py-1 rounded-lg bg-white border border-slate-900 text-[11px] font-mono hover:bg-amber-200 cursor-pointer"
+            >
+              contact@apexdynamics.com
+            </button>
+          </div>
+        </div>
+
+        {/* ERROR MESSAGE BANNER */}
+        <AnimatePresence>
+          {errorMessage && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="mt-4 p-4 rounded-2xl bg-red-100 border-2 border-slate-900 text-red-900 text-xs font-bold flex items-center gap-3 shadow-[3px_3px_0px_0px_#991b1b]"
+            >
+              <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
+              <span>{errorMessage}</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {loggedIn ? (
           <motion.div 
@@ -59,7 +129,7 @@ export default function LoginPage({ setActivePage, onOpenAuth }) {
             <div className="w-16 h-16 rounded-full bg-emerald-200 text-emerald-900 border-2 border-slate-900 flex items-center justify-center mx-auto shadow-[3px_3px_0px_0px_#0f172a]">
               <CheckCircle2 className="w-8 h-8" />
             </div>
-            <h3 className="text-2xl font-black text-slate-900">Authentication Verified</h3>
+            <h3 className="text-2xl font-black text-slate-900">Authentication Verified!</h3>
             <p className="text-xs font-bold text-slate-800">Redirecting to your page dashboard...</p>
           </motion.div>
         ) : (
@@ -91,7 +161,7 @@ export default function LoginPage({ setActivePage, onOpenAuth }) {
                   onClick={(e) => { e.preventDefault(); alert("Password reset link dispatched."); }}
                   className="text-xs font-mono font-extrabold text-slate-900 underline hover:text-amber-800"
                 >
-                  Forgot your password?
+                  Forgot password?
                 </a>
               </div>
               <input
@@ -107,10 +177,20 @@ export default function LoginPage({ setActivePage, onOpenAuth }) {
             {/* Primary Log in Button */}
             <button
               type="submit"
-              className="w-full py-4 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-black text-base shadow-[4px_4px_0px_0px_#ca8a04] border-2 border-slate-900 transition-all cursor-pointer flex items-center justify-center gap-2 mt-2"
+              disabled={isSubmitting}
+              className="w-full py-4 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-black text-base shadow-[4px_4px_0px_0px_#ca8a04] border-2 border-slate-900 transition-all cursor-pointer flex items-center justify-center gap-2 mt-2 disabled:opacity-50"
             >
-              <span>Log in</span>
-              <ArrowRight className="w-5 h-5 text-amber-300" />
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin text-amber-300" />
+                  <span>Verifying Credentials...</span>
+                </>
+              ) : (
+                <>
+                  <span>Log in</span>
+                  <ArrowRight className="w-5 h-5 text-amber-300" />
+                </>
+              )}
             </button>
 
             {/* Divider */}
@@ -124,13 +204,9 @@ export default function LoginPage({ setActivePage, onOpenAuth }) {
             {/* Secondary OAuth Button */}
             <button
               type="button"
-              onClick={() => {
-                setEmail('google.user@example.com');
-                setPassword('googlepass');
-                setLoggedIn(true);
-                setTimeout(() => setActivePage('explorer'), 1200);
-              }}
-              className="w-full py-3.5 rounded-2xl bg-white hover:bg-slate-100 text-slate-900 font-black text-sm border-2 border-slate-900 shadow-[4px_4px_0px_0px_#0f172a] transition-all cursor-pointer flex items-center justify-center gap-3"
+              onClick={handleGoogleLogin}
+              disabled={isSubmitting}
+              className="w-full py-3.5 rounded-2xl bg-white hover:bg-slate-100 text-slate-900 font-black text-sm border-2 border-slate-900 shadow-[4px_4px_0px_0px_#0f172a] transition-all cursor-pointer flex items-center justify-center gap-3 disabled:opacity-50"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>

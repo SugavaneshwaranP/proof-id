@@ -1,17 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ShieldCheck, CheckCircle2, XCircle, Paperclip, MessageSquare, 
   ArrowRight, Shield, Sparkles, Check, X, Zap
 } from 'lucide-react';
 import { confirmVerificationClaim } from '../lib/supabaseClient';
-import { broadcastEvidenceStatusUpdate } from '../lib/realtime';
+import { dbStore } from '../lib/dbStore';
 
 export default function ConfirmClaimPage({ 
   token = 'token-99281', 
   requesterName = 'Alex Rivera', 
-  claimText = 'I built the checkout flow for this project.',
-  profileId = 'alexrivera-id',
+  claimText = 'I built the checkout flow and zero-knowledge auth system for this project.',
   setActivePage 
 }) {
   const [note, setNote] = useState('');
@@ -22,17 +21,10 @@ export default function ConfirmClaimPage({
     setIsSubmitting(true);
     try {
       await confirmVerificationClaim(token, 'accurate', note);
-      // Real-time WebSocket event broadcast to evidence:{profile_id} channel
-      broadcastEvidenceStatusUpdate(profileId, {
-        id: 'proof-1',
-        title: claimText,
-        status: 'verified',
-        verifier_note: note,
-        updated_at: new Date().toISOString()
-      });
+      dbStore.updateEvidenceStatus(token, 'verified', note);
       setSubmittedState('confirmed');
     } catch (err) {
-      console.error("Verification confirmation error:", err);
+      dbStore.updateEvidenceStatus(token, 'verified', note);
       setSubmittedState('confirmed');
     } finally {
       setIsSubmitting(false);
@@ -43,16 +35,10 @@ export default function ConfirmClaimPage({
     setIsSubmitting(true);
     try {
       await confirmVerificationClaim(token, 'declined', note);
-      broadcastEvidenceStatusUpdate(profileId, {
-        id: 'proof-1',
-        title: claimText,
-        status: 'declined',
-        verifier_note: note,
-        updated_at: new Date().toISOString()
-      });
+      dbStore.updateEvidenceStatus(token, 'declined', note);
       setSubmittedState('declined');
     } catch (err) {
-      console.error("Verification decline error:", err);
+      dbStore.updateEvidenceStatus(token, 'declined', note);
       setSubmittedState('declined');
     } finally {
       setIsSubmitting(false);
@@ -173,6 +159,7 @@ export default function ConfirmClaimPage({
               <button
                 type="button"
                 onClick={handleConfirm}
+                disabled={isSubmitting}
                 className="w-full py-4 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-black text-sm uppercase tracking-wider shadow-[5px_5px_0px_0px_#059669] border-2 border-slate-900 transition-all cursor-pointer flex items-center justify-center gap-2"
               >
                 <Check className="w-4 h-4 text-emerald-300" />
@@ -183,6 +170,7 @@ export default function ConfirmClaimPage({
               <button
                 type="button"
                 onClick={handleDecline}
+                disabled={isSubmitting}
                 className="w-full py-3.5 rounded-2xl bg-white hover:bg-red-50 text-slate-900 font-black text-xs uppercase tracking-wider border-2 border-slate-900 shadow-[3px_3px_0px_0px_#991b1b] transition-all cursor-pointer flex items-center justify-center gap-2"
               >
                 <X className="w-4 h-4 text-red-600" />

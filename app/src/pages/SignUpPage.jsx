@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { ShieldCheck, ArrowRight, Paperclip, CheckCircle2, User, Mail, Lock } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ShieldCheck, ArrowRight, Paperclip, CheckCircle2, User, Mail, Lock, AlertCircle, Loader2 } from 'lucide-react';
+import { authService } from '../lib/authService';
 
 export default function SignUpPage({ setActivePage, onOpenAuth }) {
   const [fullName, setFullName] = useState('');
@@ -8,14 +9,52 @@ export default function SignUpPage({ setActivePage, onOpenAuth }) {
   const [password, setPassword] = useState('');
   const [agreedTerms, setAgreedTerms] = useState(false);
   const [accountCreated, setAccountCreated] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setErrorMessage('');
     if (!fullName || !email || !password || !agreedTerms) return;
-    setAccountCreated(true);
-    setTimeout(() => {
-      setActivePage('onboarding-type');
-    }, 1200);
+
+    if (password.length < 6) {
+      setErrorMessage('Password must be at least 6 characters long.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await authService.signUp({
+        fullName,
+        email,
+        password,
+        profileType: 'person',
+      });
+      setAccountCreated(true);
+      setTimeout(() => {
+        setActivePage('onboarding-type');
+      }, 1000);
+    } catch (err) {
+      setErrorMessage(err.message || 'Failed to create account. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleGoogleSignUp = async () => {
+    setErrorMessage('');
+    setIsSubmitting(true);
+    try {
+      await authService.signInWithGoogle();
+      setAccountCreated(true);
+      setTimeout(() => {
+        setActivePage('onboarding-type');
+      }, 1000);
+    } catch (err) {
+      setErrorMessage(err.message || 'Google sign up failed.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -27,7 +66,7 @@ export default function SignUpPage({ setActivePage, onOpenAuth }) {
         {/* Top Metallic Clip */}
         <div className="dossier-clip">
           <Paperclip className="w-3.5 h-3.5 text-amber-300" />
-          <span>SIGN UP DOSSIER</span>
+          <span>REAL-TIME SIGN UP DOSSIER</span>
         </div>
 
         {/* Logo & Header */}
@@ -48,9 +87,24 @@ export default function SignUpPage({ setActivePage, onOpenAuth }) {
             “Let’s get you backed.”
           </h1>
           <p className="text-sm font-extrabold text-slate-800">
-            Create your free page in a couple of minutes.
+            Create your real-time verified profile page.
           </p>
         </div>
+
+        {/* ERROR MESSAGE BANNER */}
+        <AnimatePresence>
+          {errorMessage && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="mt-6 p-4 rounded-2xl bg-red-100 border-2 border-slate-900 text-red-900 text-xs font-bold flex items-center gap-3 shadow-[3px_3px_0px_0px_#991b1b]"
+            >
+              <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
+              <span>{errorMessage}</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {accountCreated ? (
           <motion.div 
@@ -61,7 +115,7 @@ export default function SignUpPage({ setActivePage, onOpenAuth }) {
             <div className="w-16 h-16 rounded-full bg-emerald-200 text-emerald-900 border-2 border-slate-900 flex items-center justify-center mx-auto shadow-[3px_3px_0px_0px_#0f172a]">
               <CheckCircle2 className="w-8 h-8" />
             </div>
-            <h3 className="text-2xl font-black text-slate-900">Account Created!</h3>
+            <h3 className="text-2xl font-black text-slate-900">Account Created & Synchronized!</h3>
             <p className="text-xs font-bold text-slate-800">Moving straight into your page onboarding...</p>
           </motion.div>
         ) : (
@@ -75,7 +129,7 @@ export default function SignUpPage({ setActivePage, onOpenAuth }) {
               <input
                 type="text"
                 required
-                placeholder="Your name"
+                placeholder="Alex Rivera"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 className="w-full bg-white border-2 border-slate-900 rounded-xl px-4 py-3 text-sm text-slate-900 font-bold placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-400 shadow-[3px_3px_0px_0px_#0f172a]"
@@ -85,12 +139,12 @@ export default function SignUpPage({ setActivePage, onOpenAuth }) {
             {/* Email Input */}
             <div className="space-y-1.5">
               <label className="text-xs font-mono font-extrabold text-slate-900 uppercase tracking-wider block">
-                Email
+                Email Address
               </label>
               <input
                 type="email"
                 required
-                placeholder="you@email.com"
+                placeholder="you@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full bg-white border-2 border-slate-900 rounded-xl px-4 py-3 text-sm text-slate-900 font-bold placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-400 shadow-[3px_3px_0px_0px_#0f172a]"
@@ -105,8 +159,8 @@ export default function SignUpPage({ setActivePage, onOpenAuth }) {
               <input
                 type="password"
                 required
-                minLength={8}
-                placeholder="At least 8 characters"
+                minLength={6}
+                placeholder="At least 6 characters"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full bg-white border-2 border-slate-900 rounded-xl px-4 py-3 text-sm text-slate-900 font-bold placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-400 shadow-[3px_3px_0px_0px_#0f172a]"
@@ -131,24 +185,28 @@ export default function SignUpPage({ setActivePage, onOpenAuth }) {
             {/* Primary Button */}
             <button
               type="submit"
-              className="w-full py-4 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-black text-base shadow-[4px_4px_0px_0px_#059669] border-2 border-slate-900 transition-all cursor-pointer flex items-center justify-center gap-2 mt-2"
+              disabled={isSubmitting}
+              className="w-full py-4 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-black text-base shadow-[4px_4px_0px_0px_#059669] border-2 border-slate-900 transition-all cursor-pointer flex items-center justify-center gap-2 mt-2 disabled:opacity-50"
             >
-              <span>Create my account</span>
-              <ArrowRight className="w-5 h-5 text-emerald-300" />
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin text-emerald-300" />
+                  <span>Creating Account...</span>
+                </>
+              ) : (
+                <>
+                  <span>Create my account</span>
+                  <ArrowRight className="w-5 h-5 text-emerald-300" />
+                </>
+              )}
             </button>
 
             {/* Secondary OAuth Button */}
             <button
               type="button"
-              onClick={() => {
-                setFullName('Google User');
-                setEmail('google.user@example.com');
-                setPassword('googlepass123');
-                setAgreedTerms(true);
-                setAccountCreated(true);
-                setTimeout(() => setActivePage('onboarding-type'), 1200);
-              }}
-              className="w-full py-3.5 rounded-2xl bg-white hover:bg-slate-100 text-slate-900 font-black text-sm border-2 border-slate-900 shadow-[4px_4px_0px_0px_#0f172a] transition-all cursor-pointer flex items-center justify-center gap-3 mt-2"
+              onClick={handleGoogleSignUp}
+              disabled={isSubmitting}
+              className="w-full py-3.5 rounded-2xl bg-white hover:bg-slate-100 text-slate-900 font-black text-sm border-2 border-slate-900 shadow-[4px_4px_0px_0px_#0f172a] transition-all cursor-pointer flex items-center justify-center gap-3 mt-2 disabled:opacity-50"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>

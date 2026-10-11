@@ -42,11 +42,23 @@ import AdminReportsPage from './pages/AdminReportsPage';
 import NotFoundPage from './pages/NotFoundPage';
 import ServerErrorPage from './pages/ServerErrorPage';
 
+import { authService } from './lib/authService';
+
 export default function App() {
   const [activePage, setActivePage] = useState('home');
   const [selectedEvidence, setSelectedEvidence] = useState(null);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [authDefaultType, setAuthDefaultType] = useState('person');
+  const [currentUser, setCurrentUser] = useState(null);
+
+  // Subscribe to real-time auth changes
+  useEffect(() => {
+    setCurrentUser(authService.getCurrentUser());
+    const unsubscribe = authService.onAuthChange((user) => {
+      setCurrentUser(user);
+    });
+    return () => unsubscribe();
+  }, []);
 
   // Scroll to top on page change
   useEffect(() => {
@@ -119,9 +131,9 @@ export default function App() {
       case 'onboarding-preview':
         return <OnboardingPreviewPage setActivePage={handlePageChange} onPublish={() => console.log('Page Published!')} />;
       case 'onboarding-published':
-        return <OnboardingPublishedPage setActivePage={handlePageChange} slug="alexrivera" />;
+        return <OnboardingPublishedPage setActivePage={handlePageChange} slug={currentUser?.slug || "alexrivera"} />;
       case 'dashboard':
-        return <DashboardHomePage setActivePage={handlePageChange} userName="Alex" />;
+        return <DashboardHomePage setActivePage={handlePageChange} userName={currentUser?.fullName?.split(' ')[0] || "Alex"} />;
       case 'dashboard-profile':
         return <DashboardProfilePage setActivePage={handlePageChange} onSaveProfile={(data) => console.log('Saved profile data:', data)} />;
       case 'dashboard-projects':
@@ -139,13 +151,13 @@ export default function App() {
       case 'dashboard-settings':
         return <DashboardSettingsPage setActivePage={handlePageChange} />;
       case 'public-profile':
-        return <PublicPersonProfilePage slug="alexrivera" onOpenEvidence={setSelectedEvidence} />;
+        return <PublicPersonProfilePage slug={currentUser?.slug || "alexrivera"} onOpenEvidence={setSelectedEvidence} />;
       case 'public-business-profile':
         return <PublicBusinessProfilePage slug="apex-dynamics" onOpenEvidence={setSelectedEvidence} />;
       case 'confirm-claim':
-        return <ConfirmClaimPage token="token-99281" requesterName="Alex Rivera" claimText="I built the checkout flow for this project." setActivePage={handlePageChange} />;
+        return <ConfirmClaimPage token="token-99281" requesterName={currentUser?.fullName || "Alex Rivera"} claimText="I built the checkout flow for this project." setActivePage={handlePageChange} />;
       case 'public-contact':
-        return <PublicContactPage name="Alex Rivera" slug="alexrivera" setActivePage={handlePageChange} />;
+        return <PublicContactPage name={currentUser?.fullName || "Alex Rivera"} slug={currentUser?.slug || "alexrivera"} setActivePage={handlePageChange} />;
       case 'discover':
         return <DiscoverPage setActivePage={handlePageChange} onOpenEvidence={setSelectedEvidence} />;
       case 'admin-reports':
@@ -178,7 +190,7 @@ export default function App() {
     <div className="min-h-screen flex flex-col bg-[#f7f5f0] text-slate-900 font-sans selection:bg-yellow-300 selection:text-slate-900">
       
       {/* Realtime Architecture Live Status & Testing Toolbar */}
-      <RealtimeStatusBar profileId="alexrivera-id" />
+      <RealtimeStatusBar profileId={currentUser?.slug || "alexrivera-id"} />
 
       {/* Top Navbar */}
       <Navbar 
@@ -218,6 +230,9 @@ export default function App() {
         isOpen={isAuthOpen}
         onClose={() => setIsAuthOpen(false)}
         defaultType={authDefaultType}
+        onComplete={(slug) => {
+          setActivePage('onboarding-type');
+        }}
       />
 
     </div>

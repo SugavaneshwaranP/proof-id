@@ -4,9 +4,9 @@ import {
   ShieldCheck, Send, CheckCircle2, Paperclip, MessageSquare, 
   User, Mail, FileText, Info, ArrowLeft, Shield, Zap
 } from 'lucide-react';
-import { broadcastInboxMessage } from '../lib/realtime';
+import { dbStore } from '../lib/dbStore';
 
-export default function PublicContactPage({ name = 'Alex Rivera', slug = 'alexrivera', profileId = 'alexrivera-id', setActivePage }) {
+export default function PublicContactPage({ name = 'Alex Rivera', slug = 'alexrivera', setActivePage }) {
   const [yourName, setYourName] = useState('');
   const [yourEmail, setYourEmail] = useState('');
   const [lookingFor, setLookingFor] = useState('');
@@ -16,20 +16,15 @@ export default function PublicContactPage({ name = 'Alex Rivera', slug = 'alexri
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!yourName || !yourEmail || !message) return;
-    setIsSubmitted(true);
 
-    // Broadcast message real-time event to inbox:{profile_id} and profile:{profile_id}:activity channels
-    broadcastInboxMessage(profileId, {
-      id: Date.now(),
-      senderName: yourName,
-      senderEmail: yourEmail,
-      dateReceived: 'Just now',
-      capabilityTag: lookingFor || 'General Inquiry',
-      messageText: message,
-      isHandled: false,
-      isUnread: true,
-      created_at: new Date().toISOString()
+    dbStore.sendMessage(slug, {
+      sender_name: yourName,
+      sender_email: yourEmail,
+      subject: lookingFor ? `Inquiry regarding ${lookingFor}` : 'Direct Contact Form',
+      message: message,
     });
+
+    setIsSubmitted(true);
   };
 
   return (
@@ -58,127 +53,99 @@ export default function PublicContactPage({ name = 'Alex Rivera', slug = 'alexri
           <span>CONTACT DOSSIER</span>
         </div>
 
-        {/* Header */}
-        <div className="text-center space-y-2 pb-6 border-b-2 border-slate-900/60">
-          <span className="pill-header inline-block text-xs font-mono bg-yellow-300 text-slate-900">
-            Conversion Action
+        {/* Headline & Subhead */}
+        <div className="text-center space-y-2 pb-6 border-b-2 border-slate-900">
+          <span className="pill-header inline-block text-xs font-mono bg-slate-900 text-white">
+            Direct Inquiry Form
           </span>
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight pt-1">
-            “Get in touch with {name}”
+            “Send a message to {name}”
           </h1>
+          <p className="text-xs font-extrabold text-slate-800">
+            Delivered in real-time directly to their Backed inbox.
+          </p>
         </div>
 
-        {/* CONFIRMATION STATE */}
         {isSubmitted ? (
-          <motion.div
+          <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="py-12 text-center space-y-4"
+            className="text-center py-10 space-y-4"
           >
-            <div className="w-20 h-20 bg-emerald-300 text-slate-900 rounded-3xl border-3 border-slate-900 shadow-[6px_6px_0px_0px_#0f172a] mx-auto flex items-center justify-center">
-              <CheckCircle2 className="w-10 h-10" />
+            <div className="w-16 h-16 rounded-full bg-slate-900 text-emerald-300 border-2 border-slate-900 flex items-center justify-center mx-auto shadow-[3px_3px_0px_0px_#0f172a]">
+              <CheckCircle2 className="w-8 h-8" />
             </div>
 
-            <h3 className="text-2xl font-black text-slate-900">
-              Sent. {name} usually replies within a few days.
-            </h3>
-
-            <p className="text-xs font-extrabold text-slate-800 max-w-sm mx-auto">
-              Your message was signed and delivered directly to {name}'s verified Backed inbox.
+            <h3 className="text-2xl font-black text-slate-900">Message Dispatched!</h3>
+            <p className="text-xs font-bold text-slate-800 max-w-xs mx-auto">
+              Your inquiry has been sent to {name}'s verified inbox with real-time websocket delivery.
             </p>
 
-            <div className="pt-4">
-              <button
-                type="button"
-                onClick={() => setIsSubmitted(false)}
-                className="text-xs font-mono font-black text-slate-900 underline hover:text-emerald-800"
-              >
-                Send another message
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => setActivePage ? setActivePage('public-profile') : window.history.back()}
+              className="px-6 py-3 rounded-2xl bg-slate-900 text-white font-black text-xs uppercase tracking-wider shadow-[3px_3px_0px_0px_#059669] border-2 border-slate-900 transition-all cursor-pointer"
+            >
+              Return to Page
+            </button>
           </motion.div>
         ) : (
-          /* FORM STATE */
-          <form onSubmit={handleSubmit} className="space-y-5 pt-6">
+          <form onSubmit={handleSubmit} className="space-y-4 pt-6">
             
-            {/* Your name */}
             <div className="space-y-1">
-              <label className="text-xs font-mono font-black text-slate-900 uppercase tracking-wider block flex items-center gap-1.5">
-                <User className="w-3.5 h-3.5 text-slate-800" />
-                Your name
-              </label>
+              <label className="text-xs font-mono font-black uppercase">Your Name *</label>
               <input
                 type="text"
                 required
+                placeholder="Jane Doe"
                 value={yourName}
                 onChange={(e) => setYourName(e.target.value)}
-                placeholder="Your name"
-                className="w-full bg-white border-2 border-slate-900 rounded-xl px-4 py-3 text-xs text-slate-900 font-bold placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-400 shadow-[3px_3px_0px_0px_#0f172a]"
+                className="w-full bg-white border-2 border-slate-900 rounded-xl px-4 py-3 text-xs font-bold text-slate-900 focus:outline-none shadow-[2px_2px_0px_0px_#0f172a]"
               />
             </div>
 
-            {/* Your email */}
             <div className="space-y-1">
-              <label className="text-xs font-mono font-black text-slate-900 uppercase tracking-wider block flex items-center gap-1.5">
-                <Mail className="w-3.5 h-3.5 text-slate-800" />
-                Your email
-              </label>
+              <label className="text-xs font-mono font-black uppercase">Your Email *</label>
               <input
                 type="email"
                 required
+                placeholder="jane@company.com"
                 value={yourEmail}
                 onChange={(e) => setYourEmail(e.target.value)}
-                placeholder="you@email.com"
-                className="w-full bg-white border-2 border-slate-900 rounded-xl px-4 py-3 text-xs text-slate-900 font-bold placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-400 shadow-[3px_3px_0px_0px_#0f172a]"
+                className="w-full bg-white border-2 border-slate-900 rounded-xl px-4 py-3 text-xs font-bold text-slate-900 focus:outline-none shadow-[2px_2px_0px_0px_#0f172a]"
               />
             </div>
 
-            {/* What are you looking for? */}
             <div className="space-y-1">
-              <label className="text-xs font-mono font-black text-slate-900 uppercase tracking-wider block flex items-center gap-1.5">
-                <FileText className="w-3.5 h-3.5 text-slate-800" />
-                What are you looking for?
-              </label>
+              <label className="text-xs font-mono font-black uppercase">Looking for help with</label>
               <input
                 type="text"
+                placeholder="e.g., Technical Advisory / Custom Component Order"
                 value={lookingFor}
                 onChange={(e) => setLookingFor(e.target.value)}
-                placeholder="A line or two (e.g. Contract project, supplier quote)"
-                className="w-full bg-white border-2 border-slate-900 rounded-xl px-4 py-3 text-xs text-slate-900 font-bold placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-400 shadow-[3px_3px_0px_0px_#0f172a]"
+                className="w-full bg-white border-2 border-slate-900 rounded-xl px-4 py-3 text-xs font-bold text-slate-900 focus:outline-none shadow-[2px_2px_0px_0px_#0f172a]"
               />
             </div>
 
-            {/* Message */}
             <div className="space-y-1">
-              <label className="text-xs font-mono font-black text-slate-900 uppercase tracking-wider block flex items-center gap-1.5">
-                <MessageSquare className="w-3.5 h-3.5 text-slate-800" />
-                Message
-              </label>
+              <label className="text-xs font-mono font-black uppercase">Message *</label>
               <textarea
-                rows={3}
+                rows={4}
                 required
+                placeholder="Share project details, timelines, or RFP notes..."
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                placeholder="Tell them more"
-                className="w-full bg-white border-2 border-slate-900 rounded-xl px-4 py-3 text-xs text-slate-900 font-bold placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-400 shadow-[3px_3px_0px_0px_#0f172a] resize-none"
+                className="w-full bg-white border-2 border-slate-900 rounded-xl p-4 text-xs font-bold text-slate-900 focus:outline-none shadow-[2px_2px_0px_0px_#0f172a] resize-none"
               />
             </div>
 
-            {/* Submit Button */}
             <button
               type="submit"
-              className="w-full py-4 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-black text-sm uppercase tracking-wider shadow-[5px_5px_0px_0px_#059669] border-2 border-slate-900 transition-all cursor-pointer flex items-center justify-center gap-2 mt-2"
+              className="w-full py-4 rounded-2xl bg-slate-900 text-white font-black text-xs uppercase tracking-wider shadow-[4px_4px_0px_0px_#059669] border-2 border-slate-900 hover:bg-slate-800 transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               <Send className="w-4 h-4 text-emerald-300" />
-              <span>Send message</span>
+              <span>Send Message</span>
             </button>
-
-            {/* RATE-LIMIT NOTICE */}
-            <div className="bg-white/80 p-3.5 rounded-xl border-2 border-slate-900 flex items-start gap-2 text-[11px] font-extrabold text-slate-700 shadow-[2px_2px_0px_0px_#0f172a] mt-4">
-              <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-              <p>Please don’t send more than a few messages a day — it helps keep things genuine.</p>
-            </div>
-
           </form>
         )}
 

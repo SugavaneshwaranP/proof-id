@@ -53,13 +53,13 @@ export default function LoginPage({ setActivePage, onOpenAuth }) {
   return (
     <div className="space-y-12 pb-20 max-w-xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 font-sans desk-grid-background">
       
-      {/* Tactile Login Dossier Card */}
+      {/* Tactile Login Container */}
       <div className="dossier-card-yellow rounded-3xl p-8 sm:p-10 border-3 border-slate-900 shadow-[8px_8px_0px_0px_#0f172a] relative overflow-hidden text-slate-900">
         
         {/* Top Metallic Clip */}
         <div className="dossier-clip">
           <Paperclip className="w-3.5 h-3.5 text-amber-300" />
-          <span>AUTHENTICATION DOSSIER</span>
+          <span>WELCOME BACK</span>
         </div>
 
         {/* Logo & Header */}
@@ -77,10 +77,10 @@ export default function LoginPage({ setActivePage, onOpenAuth }) {
           </div>
 
           <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight pt-2">
-            “Welcome back”
+            Log In to Backed
           </h1>
           <p className="text-sm font-extrabold text-slate-800">
-            Log in to manage your real-time verified page.
+            Log in to manage your profile and view messages.
           </p>
         </div>
 
@@ -129,8 +129,8 @@ export default function LoginPage({ setActivePage, onOpenAuth }) {
             <div className="w-16 h-16 rounded-full bg-emerald-200 text-emerald-900 border-2 border-slate-900 flex items-center justify-center mx-auto shadow-[3px_3px_0px_0px_#0f172a]">
               <CheckCircle2 className="w-8 h-8" />
             </div>
-            <h3 className="text-2xl font-black text-slate-900">Authentication Verified!</h3>
-            <p className="text-xs font-bold text-slate-800">Redirecting to your page dashboard...</p>
+            <h3 className="text-2xl font-black text-slate-900">Logged in successfully!</h3>
+            <p className="text-xs font-bold text-slate-800">Redirecting to your dashboard...</p>
           </motion.div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-5 pt-6">
@@ -183,7 +183,7 @@ export default function LoginPage({ setActivePage, onOpenAuth }) {
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin text-amber-300" />
-                  <span>Verifying Credentials...</span>
+                  <span>Logging in...</span>
                 </>
               ) : (
                 <>

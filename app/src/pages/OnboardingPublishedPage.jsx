@@ -1,12 +1,16 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { ShieldCheck, Copy, Share2, QrCode, ArrowRight, Paperclip, CheckCircle2, MessageSquare, Sparkles } from 'lucide-react';
+import { authService } from '../lib/authService';
 
-export default function OnboardingPublishedPage({ setActivePage, slug = 'alexrivera' }) {
+export default function OnboardingPublishedPage({ setActivePage, slug: propSlug }) {
   const [copied, setCopied] = useState(false);
   const [showQrModal, setShowQrModal] = useState(false);
 
-  const fullUrl = `https://backed.app/${slug}`;
+  const currentUser = authService.getCurrentUser();
+  const slug = propSlug || currentUser?.slug || 'profile';
+  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://backed.network';
+  const fullUrl = `${origin}/${slug}`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(fullUrl);
@@ -36,13 +40,13 @@ export default function OnboardingPublishedPage({ setActivePage, slug = 'alexriv
         <span className="stamp-verified text-xs py-0.5 px-3">★ LIVE ★</span>
       </div>
 
-      {/* Main Tactile Dossier Container */}
+      {/* Main Container */}
       <div className="dossier-card rounded-3xl p-6 sm:p-10 border-3 border-slate-900 shadow-[8px_8px_0px_0px_#0f172a] relative overflow-hidden bg-[#a7f3d0] text-slate-900">
         
         {/* Top Metallic Clip */}
         <div className="dossier-clip">
           <Paperclip className="w-3.5 h-3.5 text-amber-300" />
-          <span>PUBLISHED PAGE DOSSIER</span>
+          <span>YOUR LIVE PAGE</span>
         </div>
 
         {/* Success Icon & Header */}
@@ -57,7 +61,7 @@ export default function OnboardingPublishedPage({ setActivePage, slug = 'alexriv
           </motion.div>
 
           <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight pt-2">
-            “You’re live.”
+            You’re live!
           </h1>
           <p className="text-sm font-extrabold text-slate-800">
             Your page is out in the world — here’s your link.
@@ -68,7 +72,7 @@ export default function OnboardingPublishedPage({ setActivePage, slug = 'alexriv
         <div className="space-y-6 pt-6">
           <div className="bg-white p-4 sm:p-5 rounded-2xl border-3 border-slate-900 shadow-[5px_5px_0px_0px_#0f172a] space-y-2">
             <span className="text-[11px] font-mono font-black text-slate-500 uppercase tracking-wider block">
-              YOUR SHAREABLE PAGE ADDRESS
+              YOUR LIVE LINK
             </span>
             <div className="flex items-center justify-between gap-3 bg-slate-100 p-3.5 rounded-xl border-2 border-slate-900 font-mono text-sm font-black text-slate-900">
               <span className="truncate">{fullUrl}</span>

@@ -3,12 +3,28 @@ import { motion } from 'framer-motion';
 import { 
   User, Building2, ShieldCheck, Award, ExternalLink, Calendar, MapPin, 
   CheckCircle2, Clock, FileText, Send, Share2, BarChart3, Info, Sparkles,
-  Paperclip, CheckSquare, Star
+  Paperclip, CheckSquare, Star, ArrowUpRight
 } from 'lucide-react';
+import { dbStore } from '../lib/dbStore';
 
-export default function ProfileExplorerPage({ onOpenEvidence }) {
+export default function ProfileExplorerPage({ onOpenEvidence, setActivePage }) {
   const [profileType, setProfileType] = useState('person'); // 'person' | 'business'
   const [quoteSent, setQuoteSent] = useState(false);
+
+  const handleRequestQuote = async () => {
+    try {
+      await dbStore.sendMessage('apex-dynamics', {
+        sender_name: 'Explorer Visitor',
+        sender_email: 'inquiries@apexindustrial.example',
+        subject: 'Commercial Quote Request for Precision Parts',
+        message: 'Requesting RFQ quotation on standard catalog components.',
+        rfqData: { quantity: '50', unit: 'units', deliveryRegion: 'North America' }
+      });
+    } catch (err) {
+      console.warn("Quote request queued:", err);
+    }
+    setQuoteSent(true);
+  };
 
   // Demo Person Data
   const personProfile = {
@@ -130,40 +146,53 @@ export default function ProfileExplorerPage({ onOpenEvidence }) {
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between pb-6 border-b-2 border-slate-900 gap-4">
         <div>
           <span className="dossier-stamp">
-            ★ INTERACTIVE DOSSIER VIEWER ★
+            ★ COMMUNITY SHOWCASE ★
           </span>
           <h1 className="text-3xl font-black text-slate-900 pt-1">
-            {profileType === 'person' ? 'Person Character File' : 'B2B Business File'}
+            {profileType === 'person' ? 'Individual Profile Example' : 'Business Profile Example'}
           </h1>
           <p className="text-xs font-bold text-slate-700">
-            Inspect live character dossier cards, proof seals, and verified capability chips.
+            Browse verified profiles, certificates, and work samples.
           </p>
         </div>
 
         {/* Profile Type Toggle Buttons */}
-        <div className="bg-white p-1.5 rounded-2xl border-2 border-slate-900 shadow-[3px_3px_0px_0px_#0f172a] flex items-center gap-1">
-          <button
-            onClick={() => setProfileType('person')}
-            className={`px-4 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer ${
-              profileType === 'person'
-                ? 'bg-amber-300 text-slate-900 border-2 border-slate-900 shadow-[2px_2px_0px_0px_#0f172a]'
-                : 'text-slate-700 hover:text-slate-900'
-            }`}
-          >
-            <User className="w-4 h-4 text-slate-900" />
-            <span>Person Character Card</span>
-          </button>
-          <button
-            onClick={() => setProfileType('business')}
-            className={`px-4 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer ${
-              profileType === 'business'
-                ? 'bg-emerald-300 text-slate-900 border-2 border-slate-900 shadow-[2px_2px_0px_0px_#0f172a]'
-                : 'text-slate-700 hover:text-slate-900'
-            }`}
-          >
-            <Building2 className="w-4 h-4 text-slate-900" />
-            <span>B2B Business File</span>
-          </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="bg-white p-1.5 rounded-2xl border-2 border-slate-900 shadow-[3px_3px_0px_0px_#0f172a] flex items-center gap-1">
+            <button
+              onClick={() => setProfileType('person')}
+              className={`px-4 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer ${
+                profileType === 'person'
+                  ? 'bg-amber-300 text-slate-900 border-2 border-slate-900 shadow-[2px_2px_0px_0px_#0f172a]'
+                  : 'text-slate-700 hover:text-slate-900'
+              }`}
+            >
+              <User className="w-4 h-4 text-slate-900" />
+              <span>Individual Profile</span>
+            </button>
+            <button
+              onClick={() => setProfileType('business')}
+              className={`px-4 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer ${
+                profileType === 'business'
+                  ? 'bg-emerald-300 text-slate-900 border-2 border-slate-900 shadow-[2px_2px_0px_0px_#0f172a]'
+                  : 'text-slate-700 hover:text-slate-900'
+              }`}
+            >
+              <Building2 className="w-4 h-4 text-slate-900" />
+              <span>Business Profile</span>
+            </button>
+          </div>
+
+          {setActivePage && (
+            <button
+              type="button"
+              onClick={() => setActivePage(profileType === 'business' ? 'public-business-profile' : 'public-profile', profileType === 'business' ? 'apex-dynamics' : 'alexrivera')}
+              className="px-3.5 py-2.5 bg-white hover:bg-slate-50 border-2 border-slate-900 rounded-xl text-xs font-mono font-black text-slate-900 flex items-center gap-1.5 shadow-[2px_2px_0px_0px_#0f172a] cursor-pointer"
+            >
+              <span>View Live Profile</span>
+              <ArrowUpRight className="w-3.5 h-3.5 text-slate-900" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -177,20 +206,20 @@ export default function ProfileExplorerPage({ onOpenEvidence }) {
             {/* Top Clip */}
             <div className="dossier-clip">
               <Paperclip className="w-3.5 h-3.5 text-amber-300" />
-              <span>CHARACTER FILE #9402</span>
+              <span>PROFILE PREVIEW</span>
             </div>
 
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 pt-2">
               
               <div className="flex items-center gap-5">
                 <div className="w-20 h-20 rounded-3xl bg-white border-3 border-slate-900 p-1 shadow-[4px_4px_0px_0px_#0f172a] overflow-hidden flex-shrink-0">
-                  <img src="/avatar_hero.png" alt="Alex Rivera Avatar" className="w-full h-full object-cover rounded-2xl" />
+                  <img src="/avatar_hero.png" alt="Profile Avatar" className="w-full h-full object-cover rounded-2xl" />
                 </div>
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <h2 className="text-3xl font-black text-slate-900">{personProfile.name}</h2>
                     <span className="dossier-stamp">
-                      ★ VERIFIED PERSON ★
+                      ★ VERIFIED PROFILE ★
                     </span>
                   </div>
                   <p className="text-sm font-extrabold text-slate-800">{personProfile.headline}</p>
@@ -243,7 +272,7 @@ export default function ProfileExplorerPage({ onOpenEvidence }) {
             <div className="lg:col-span-2 dossier-card-pink rounded-3xl p-6 border-3 border-slate-900 space-y-4 shadow-[6px_6px_0px_0px_#0f172a]">
               <div className="dossier-clip">
                 <Paperclip className="w-3.5 h-3.5 text-slate-900" />
-                <span>SKILLS FILE</span>
+                <span>SKILLS & SERVICES</span>
               </div>
 
               <div className="pt-2">
@@ -263,15 +292,15 @@ export default function ProfileExplorerPage({ onOpenEvidence }) {
               </div>
             </div>
 
-            {/* Proof Dossier Column */}
+            {/* Proof Column */}
             <div className="dossier-card-blue rounded-3xl p-6 border-3 border-slate-900 space-y-4 shadow-[6px_6px_0px_0px_#0f172a]">
               <div className="dossier-clip">
                 <Paperclip className="w-3.5 h-3.5 text-slate-900" />
-                <span>PROOF FILE</span>
+                <span>WORK SAMPLES</span>
               </div>
 
               <div className="pt-2">
-                <span className="dossier-pill-proof">Attached Proof File (2)</span>
+                <span className="dossier-pill-proof">Verified Work Samples (2)</span>
               </div>
 
               <div className="space-y-3 pt-2">
@@ -286,7 +315,7 @@ export default function ProfileExplorerPage({ onOpenEvidence }) {
                       <span className="dossier-stamp">VERIFIED</span>
                     </div>
                     <h4 className="text-sm font-black text-slate-900 leading-tight">{ev.title}</h4>
-                    <p className="text-[11px] font-bold text-slate-700">Verifier: {ev.relationship}</p>
+                    <p className="text-[11px] font-bold text-slate-700">Confirmed by: {ev.relationship}</p>
                   </button>
                 ))}
               </div>
@@ -298,11 +327,11 @@ export default function ProfileExplorerPage({ onOpenEvidence }) {
           <div className="dossier-card-mint rounded-3xl p-6 border-3 border-slate-900 space-y-4 shadow-[6px_6px_0px_0px_#0f172a]">
             <div className="dossier-clip">
               <Paperclip className="w-3.5 h-3.5 text-slate-900" />
-              <span>PORTFOLIO DOSSIER</span>
+              <span>FEATURED PROJECTS</span>
             </div>
 
             <div className="pt-2">
-              <span className="dossier-pill-about">Featured Projects Portfolio</span>
+              <span className="dossier-pill-about">Featured Projects</span>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
@@ -337,7 +366,7 @@ export default function ProfileExplorerPage({ onOpenEvidence }) {
             
             <div className="dossier-clip">
               <Paperclip className="w-3.5 h-3.5 text-slate-900" />
-              <span>B2B SUPPLIER DOSSIER #TX-9402</span>
+              <span>BUSINESS PROFILE</span>
             </div>
 
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 pt-2">
@@ -350,7 +379,7 @@ export default function ProfileExplorerPage({ onOpenEvidence }) {
                   <div className="flex items-center gap-2">
                     <h2 className="text-2xl font-black text-slate-900">{businessProfile.companyName}</h2>
                     <span className="dossier-stamp">
-                      ★ ISO 9001 VERIFIED ★
+                      ★ VERIFIED BUSINESS ★
                     </span>
                   </div>
                   <p className="text-sm font-extrabold text-slate-800">{businessProfile.businessType}</p>
@@ -365,13 +394,13 @@ export default function ProfileExplorerPage({ onOpenEvidence }) {
               {/* Quote CTA */}
               <div className="bg-white border-2 border-slate-900 p-4 rounded-2xl space-y-2 shadow-[4px_4px_0px_0px_#0f172a]">
                 <button
-                  onClick={() => setQuoteSent(true)}
+                  onClick={handleRequestQuote}
                   className="w-full px-6 py-3 rounded-xl bg-amber-300 hover:bg-amber-400 text-slate-900 font-black text-sm shadow-[2px_2px_0px_0px_#0f172a] flex items-center justify-center gap-2 cursor-pointer transition-all border-2 border-slate-900"
                 >
                   <Send className="w-4 h-4 text-slate-900" />
-                  <span>{quoteSent ? 'Quote Requested ✓' : 'Request Commercial Quote'}</span>
+                  <span>{quoteSent ? 'Quote Requested ✓' : 'Request a Quote'}</span>
                 </button>
-                <span className="text-[10px] font-mono text-slate-700 font-extrabold text-center block">Zero-Login Sharing Enabled</span>
+                <span className="text-[10px] font-mono text-slate-700 font-extrabold text-center block">Direct messaging enabled</span>
               </div>
 
             </div>
@@ -386,7 +415,7 @@ export default function ProfileExplorerPage({ onOpenEvidence }) {
 
           {/* Product Catalog Grid */}
           <div className="dossier-card rounded-3xl p-6 border-3 border-slate-900 space-y-4 shadow-[6px_6px_0px_0px_#0f172a]">
-            <span className="dossier-pill-proof">Standardized Product & Parts Catalog</span>
+            <span className="dossier-pill-proof">Products & Services Catalog</span>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
               {businessProfile.products.map((prod, i) => (
                 <div key={i} className="bg-amber-50 border-2 border-slate-900 p-5 rounded-2xl space-y-3 shadow-[3px_3px_0px_0px_#0f172a]">
@@ -396,7 +425,7 @@ export default function ProfileExplorerPage({ onOpenEvidence }) {
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-xs font-mono text-slate-900 pt-1">
                     <div className="bg-white p-2.5 rounded-xl border-2 border-slate-900">
-                      <span className="text-slate-600 block text-[10px] font-extrabold">MOQ LIMIT</span>
+                      <span className="text-slate-600 block text-[10px] font-extrabold">MIN ORDER</span>
                       <span className="font-black text-slate-900">{prod.moq}</span>
                     </div>
                     <div className="bg-white p-2.5 rounded-xl border-2 border-slate-900">
@@ -412,9 +441,9 @@ export default function ProfileExplorerPage({ onOpenEvidence }) {
             </div>
           </div>
 
-          {/* ISO Evidence Certificates */}
+          {/* Certificates */}
           <div className="dossier-card rounded-3xl p-6 border-3 border-slate-900 space-y-4 shadow-[6px_6px_0px_0px_#0f172a]">
-            <span className="dossier-pill-about">ISO Certificates & Machinery Audits (2)</span>
+            <span className="dossier-pill-about">Certificates & Quality Documents (2)</span>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
               {businessProfile.evidenceItems.map((ev, i) => (
                 <button
@@ -427,7 +456,7 @@ export default function ProfileExplorerPage({ onOpenEvidence }) {
                     <span className="dossier-stamp">VERIFIED</span>
                   </div>
                   <h4 className="text-sm font-black text-slate-900">{ev.title}</h4>
-                  <p className="text-[11px] font-bold text-slate-700">Auditor: {ev.relationship}</p>
+                  <p className="text-[11px] font-bold text-slate-700">Confirmed by: {ev.relationship}</p>
                 </button>
               ))}
             </div>

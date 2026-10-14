@@ -10,6 +10,7 @@ export default function SignUpPage({ setActivePage, onOpenAuth }) {
   const [password, setPassword] = useState('');
   const [agreedTerms, setAgreedTerms] = useState(false);
   const [accountCreated, setAccountCreated] = useState(false);
+  const [isAwaitingConfirmation, setIsAwaitingConfirmation] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -25,7 +26,7 @@ export default function SignUpPage({ setActivePage, onOpenAuth }) {
 
     setIsSubmitting(true);
     try {
-      await authService.signUp({
+      const res = await authService.signUp({
         fullName,
         email,
         password,
@@ -35,13 +36,18 @@ export default function SignUpPage({ setActivePage, onOpenAuth }) {
       saveOnboardingDraft({
         fullName,
         contactMethod: email,
-        slug: fullName.toLowerCase().replace(/[^a-z0-9_-]/g, '') || 'alexrivera',
+        slug: fullName.toLowerCase().replace(/[^a-z0-9_-]/g, ''),
         stepIndex: 1
       });
-      setAccountCreated(true);
-      setTimeout(() => {
-        setActivePage('onboarding-type');
-      }, 1000);
+
+      if (res?.needsEmailConfirmation) {
+        setIsAwaitingConfirmation(true);
+      } else {
+        setAccountCreated(true);
+        setTimeout(() => {
+          setActivePage('onboarding-type');
+        }, 1000);
+      }
     } catch (err) {
       setErrorMessage(err.message || 'Failed to create account. Please try again.');
     } finally {
@@ -68,13 +74,13 @@ export default function SignUpPage({ setActivePage, onOpenAuth }) {
   return (
     <div className="space-y-12 pb-20 max-w-xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 font-sans desk-grid-background">
       
-      {/* Tactile Sign Up Dossier Card */}
+      {/* Tactile Sign Up Container */}
       <div className="dossier-card-mint rounded-3xl p-8 sm:p-10 border-3 border-slate-900 shadow-[8px_8px_0px_0px_#0f172a] relative overflow-hidden text-slate-900">
         
         {/* Top Metallic Clip */}
         <div className="dossier-clip">
           <Paperclip className="w-3.5 h-3.5 text-amber-300" />
-          <span>REAL-TIME SIGN UP DOSSIER</span>
+          <span>CREATE YOUR ACCOUNT</span>
         </div>
 
         {/* Logo & Header */}
@@ -92,10 +98,10 @@ export default function SignUpPage({ setActivePage, onOpenAuth }) {
           </div>
 
           <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight pt-2">
-            “Let’s get you backed.”
+            Create Your Profile
           </h1>
           <p className="text-sm font-extrabold text-slate-800">
-            Create your real-time verified profile page.
+            Set up your verified profile in minutes.
           </p>
         </div>
 
@@ -114,7 +120,38 @@ export default function SignUpPage({ setActivePage, onOpenAuth }) {
           )}
         </AnimatePresence>
 
-        {accountCreated ? (
+        {isAwaitingConfirmation ? (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="text-center py-8 space-y-4"
+          >
+            <div className="w-16 h-16 rounded-2xl bg-amber-200 text-amber-900 border-2 border-slate-900 flex items-center justify-center mx-auto shadow-[3px_3px_0px_0px_#0f172a]">
+              <Mail className="w-8 h-8" />
+            </div>
+            <h3 className="text-2xl font-black text-slate-900">Check Your Email</h3>
+            <p className="text-xs font-bold text-slate-800 max-w-sm mx-auto">
+              We sent a verification link to <strong className="text-slate-900">{email}</strong>. 
+              Confirm your email to activate and publish your verified profile.
+            </p>
+            <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+              <button
+                type="button"
+                onClick={() => setActivePage('login')}
+                className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-slate-900 text-white font-black text-xs uppercase tracking-wider hover:bg-slate-800 border-2 border-slate-900 shadow-[3px_3px_0px_0px_#0f172a] transition-all"
+              >
+                Go to Log In
+              </button>
+              <button
+                type="button"
+                onClick={() => setActivePage('onboarding-type')}
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-amber-300 text-slate-900 font-black text-xs uppercase tracking-wider hover:bg-amber-400 border-2 border-slate-900 shadow-[3px_3px_0px_0px_#0f172a] transition-all"
+              >
+                Continue in Preview
+              </button>
+            </div>
+          </motion.div>
+        ) : accountCreated ? (
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}

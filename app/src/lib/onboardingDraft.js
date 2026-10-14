@@ -1,49 +1,50 @@
 // ============================================================================
 // ONBOARDING DRAFT STATE MANAGER
-// Ensures first-time users can save draft state at every step without losing input (Criterion 1 & 2)
+// Pure user real-time draft storage. Zero template or predefined fake data.
 // ============================================================================
 
-const DRAFT_STORAGE_KEY = 'backed_onboarding_draft_v1';
+import { authService } from "./authService";
 
-export const DEFAULT_DRAFT = {
-  profileType: 'person', // 'person' | 'business'
-  slug: 'alexrivera',
-  fullName: 'Alex Rivera',
-  headline: 'Backend developer who ships fast',
-  location: 'San Francisco, CA',
-  bio: 'Building resilient microservices, distributed ledger verifications, and high-performance Rust web backends.',
-  contactMethod: 'alex@backed.network', // Crucial for Criterion 3: Minimum Credible Publishing
-  photoUrl: '/avatar_hero.png',
-  businessName: 'Apex Precision Dynamics LLC',
-  whatYouDo: 'Contract manufacturer specializing in sub-micron tolerance CNC milling',
-  operatingRegions: 'North America, EU, Japan',
-  logoPreview: '🏢',
-  capabilities: ['Backend Systems', 'Rust Architecture', 'API Verification'],
-  proofList: [
-    {
-      id: 1,
-      title: 'E-commerce site for a local bakery',
-      linkOrFile: 'https://github.com/alexrivera/bakery-storefront',
-      dateHappened: 'June 2025',
-      type: 'Project Artifact'
-    }
-  ],
-  stepIndex: 1,
-  lastSaved: new Date().toISOString()
-};
+const DRAFT_STORAGE_KEY = "backed_onboarding_draft_v1";
+
+export function getDefaultDraft() {
+  const currentUser = authService.getCurrentUser();
+  const email = currentUser?.email || "";
+  const fullName = currentUser?.fullName && currentUser.fullName !== "User" ? currentUser.fullName : "";
+  const slug = currentUser?.slug && currentUser.slug !== "alexrivera" ? currentUser.slug : (fullName ? fullName.toLowerCase().replace(/[^a-z0-9_-]/g, "") : "");
+
+  return {
+    profileType: currentUser?.profileType || "person", // 'person' | 'business'
+    slug: slug,
+    fullName: fullName,
+    headline: "",
+    location: "",
+    bio: "",
+    contactMethod: email,
+    photoUrl: currentUser?.avatarUrl || "/avatar_hero.png",
+    businessName: "",
+    whatYouDo: "",
+    operatingRegions: "",
+    logoPreview: "🏢",
+    capabilities: [],
+    proofList: [],
+    stepIndex: 1,
+    lastSaved: new Date().toISOString(),
+  };
+}
 
 export function getOnboardingDraft() {
   try {
     const raw = localStorage.getItem(DRAFT_STORAGE_KEY);
+    const defaults = getDefaultDraft();
     if (!raw) {
-      localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(DEFAULT_DRAFT));
-      return { ...DEFAULT_DRAFT };
+      return defaults;
     }
     const parsed = JSON.parse(raw);
-    return { ...DEFAULT_DRAFT, ...parsed };
+    return { ...defaults, ...parsed };
   } catch (e) {
-    console.warn('Failed to parse onboarding draft from localStorage:', e);
-    return { ...DEFAULT_DRAFT };
+    console.warn("Failed to parse onboarding draft from localStorage:", e);
+    return getDefaultDraft();
   }
 }
 
@@ -53,28 +54,22 @@ export function saveOnboardingDraft(updates) {
     const updated = {
       ...current,
       ...updates,
-      lastSaved: new Date().toISOString()
+      lastSaved: new Date().toISOString(),
     };
     localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(updated));
-    window.dispatchEvent(new CustomEvent('backed-draft-updated', { detail: updated }));
+    window.dispatchEvent(new CustomEvent("backed-draft-updated", { detail: updated }));
     return updated;
   } catch (e) {
-    console.warn('Failed to save onboarding draft:', e);
-    return null;
+    console.warn("Failed to save onboarding draft to localStorage:", e);
+    return updates;
   }
 }
 
 export function clearOnboardingDraft() {
   try {
     localStorage.removeItem(DRAFT_STORAGE_KEY);
-    window.dispatchEvent(new CustomEvent('backed-draft-updated', { detail: DEFAULT_DRAFT }));
+    window.dispatchEvent(new CustomEvent("backed-draft-cleared"));
   } catch (e) {
-    console.warn('Failed to clear onboarding draft:', e);
+    console.warn("Failed to clear onboarding draft:", e);
   }
-}
-
-export function onDraftSync(callback) {
-  const handler = (e) => callback(e.detail);
-  window.addEventListener('backed-draft-updated', handler);
-  return () => window.removeEventListener('backed-draft-updated', handler);
 }

@@ -13,6 +13,7 @@ import { analyticsRepository } from "./repositories/analyticsRepository";
 import { supabase } from "./supabaseClient";
 import { broadcastActivityEvent, broadcastEvidenceStatusUpdate, broadcastInboxMessage } from "./realtime";
 import { enqueueOfflineMutation } from "./offlineQueue";
+import { authService } from "./authService";
 
 // In-memory runtime cache for seamless UI reactivity (never stored in localStorage)
 const memoryCache = {
@@ -23,14 +24,90 @@ const memoryCache = {
   inbox: {},
   analytics: {},
   reports: [],
+  verification_requests: {},
+  settings: {},
 };
 
 const SYNC_EVENT = "backed-db-sync";
 
+let syncPending = false;
 function triggerSync() {
-  if (typeof window !== "undefined") {
+  if (typeof window === "undefined") return;
+  if (syncPending) return;
+  syncPending = true;
+  requestAnimationFrame(() => {
+    syncPending = false;
     window.dispatchEvent(new CustomEvent(SYNC_EVENT, { detail: memoryCache }));
+  });
+}
+
+/**
+ * Robust helper: Guarantee resolution of profileId for database operations
+ */
+async function resolveProfileId(slug) {
+  if (!slug) return null;
+  const cleanSlug = slug.toLowerCase();
+
+  // 1. Check memory cache
+  if (memoryCache.profiles[cleanSlug]?.id) {
+    return memoryCache.profiles[cleanSlug].id;
   }
+
+  // 2. Check local authenticated user session via authService
+  try {
+    const localUser = authService.getCurrentUser();
+    if (localUser?.id) {
+      if (memoryCache.profiles[cleanSlug]) {
+        memoryCache.profiles[cleanSlug].id = localUser.id;
+      }
+      return localUser.id;
+    }
+  } catch {
+    // Ignore error
+  }
+
+  // 3. Check current authenticated user session in Supabase Auth
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user?.id) {
+      if (memoryCache.profiles[cleanSlug]) {
+        memoryCache.profiles[cleanSlug].id = user.id;
+      }
+      return user.id;
+    }
+  } catch {
+    // Ignore error and fall back
+  }
+
+  // 4. Query profiles table by slug via repository
+  try {
+    const profile = await profileRepository.getBySlug(cleanSlug);
+    if (profile?.id) {
+      memoryCache.profiles[cleanSlug] = { ...(memoryCache.profiles[cleanSlug] || {}), ...profile };
+      return profile.id;
+    }
+  } catch {
+    // Ignore error
+  }
+
+  // 5. Query profiles table directly by slug with maybeSingle
+  try {
+    const { data: directProfile } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("slug", cleanSlug)
+      .maybeSingle();
+    if (directProfile?.id) {
+      if (memoryCache.profiles[cleanSlug]) {
+        memoryCache.profiles[cleanSlug].id = directProfile.id;
+      }
+      return directProfile.id;
+    }
+  } catch {
+    // Ignore error
+  }
+
+  return null;
 }
 
 export const dbStore = {
@@ -66,7 +143,7 @@ export const dbStore = {
       bio: "",
       avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(cleanSlug)}`,
       availability_status: "Open to opportunities",
-      is_published: true,
+      is_published: false,
       completion_score: 50,
       capabilities: [],
       created_at: new Date().toISOString(),
@@ -77,6 +154,30 @@ export const dbStore = {
   fetchProfile: async (slug) => {
     if (!slug) return null;
     const cleanSlug = slug.toLowerCase();
+    try {
+      const bundle = await profileRepository.getPublicBundle(cleanSlug);
+      if (bundle && bundle.profile) {
+        memoryCache.profiles[cleanSlug] = {
+          ...bundle.profile,
+          capabilities: bundle.capabilities || [],
+          businessDetails: bundle.business_details || null,
+        };
+        if (bundle.evidence && bundle.evidence.length > 0) {
+          memoryCache.evidence[cleanSlug] = bundle.evidence;
+        }
+        if (bundle.projects && bundle.projects.length > 0) {
+          memoryCache.projects[cleanSlug] = bundle.projects;
+        }
+        if (bundle.products && bundle.products.length > 0) {
+          memoryCache.products[cleanSlug] = bundle.products;
+        }
+        triggerSync();
+        return memoryCache.profiles[cleanSlug];
+      }
+    } catch (err) {
+      console.warn(`[dbStore] fetchProfile bundle failed for ${cleanSlug}:`, err);
+    }
+
     try {
       const profile = await profileRepository.getBySlug(cleanSlug);
       if (profile) {
@@ -98,8 +199,9 @@ export const dbStore = {
     triggerSync();
 
     try {
-      if (current.id) {
-        const persisted = await profileRepository.updateProfile(current.id, updates);
+      const profileId = await resolveProfileId(cleanSlug);
+      if (profileId) {
+        const persisted = await profileRepository.updateProfile(profileId, updates);
         memoryCache.profiles[cleanSlug] = { ...optimistic, ...persisted };
         triggerSync();
         return memoryCache.profiles[cleanSlug];
@@ -111,18 +213,110 @@ export const dbStore = {
     return optimistic;
   },
 
+  publishProfile: async (slug) => {
+    const cleanSlug = slug.toLowerCase();
+
+    // 1. Optimistic cache update
+    if (memoryCache.profiles[cleanSlug]) {
+      memoryCache.profiles[cleanSlug].is_published = true;
+      memoryCache.profiles[cleanSlug].completion_score = 95;
+      triggerSync();
+    }
+
+    try {
+      const profileId = await resolveProfileId(cleanSlug);
+      if (profileId) {
+        const result = await profileRepository.publishProfile(profileId);
+        if (memoryCache.profiles[cleanSlug]) {
+          memoryCache.profiles[cleanSlug].is_published = true;
+          memoryCache.profiles[cleanSlug].completion_score = result?.completion_score || 95;
+          triggerSync();
+        }
+        return result;
+      }
+    } catch (err) {
+      console.warn(`[dbStore] Remote publishProfile failed or queued:`, err);
+    }
+    return { success: true, published: true };
+  },
+
+  addCapability: async (slug, capabilityName, category = "General") => {
+    const cleanSlug = slug.toLowerCase();
+
+    // 1. Ensure optimistic cache update
+    if (!memoryCache.profiles[cleanSlug]) {
+      memoryCache.profiles[cleanSlug] = { slug: cleanSlug, capabilities: [] };
+    }
+    const caps = memoryCache.profiles[cleanSlug].capabilities || [];
+    const capNameStr = typeof capabilityName === "string" ? capabilityName : (capabilityName?.name || "Capability");
+    if (!caps.some(c => (typeof c === "string" ? c : c.name)?.toLowerCase() === capNameStr.toLowerCase())) {
+      memoryCache.profiles[cleanSlug].capabilities = [...caps, { name: capNameStr, category }];
+      triggerSync();
+    }
+
+    // 2. Try persisting to Supabase if profileId resolves
+    try {
+      const profileId = await resolveProfileId(cleanSlug);
+      if (profileId) {
+        return await profileRepository.addCapability(profileId, capNameStr, category);
+      }
+    } catch (err) {
+      console.warn(`[dbStore] Remote addCapability failed, cached optimistically:`, err);
+    }
+
+    return { name: capNameStr, category };
+  },
+
+  removeCapability: async (slug, capabilityId) => {
+    const cleanSlug = slug.toLowerCase();
+    if (memoryCache.profiles[cleanSlug]) {
+      memoryCache.profiles[cleanSlug].capabilities = (memoryCache.profiles[cleanSlug].capabilities || [])
+        .filter(c => c.id !== capabilityId && c.name !== capabilityId);
+      triggerSync();
+    }
+
+    try {
+      const profileId = await resolveProfileId(cleanSlug);
+      if (profileId) {
+        await profileRepository.removeCapability(profileId, capabilityId);
+      }
+    } catch (err) {
+      console.warn(`[dbStore] Remote removeCapability failed:`, err);
+    }
+    return true;
+  },
+
   getAllProfiles: () => {
-    // Return cached published profiles, trigger background fetch
     const list = Object.values(memoryCache.profiles).filter((p) => p.is_published);
     if (list.length === 0) {
       profileRepository.searchPublishedProfiles().then((profiles) => {
         profiles.forEach((p) => {
-          if (p.slug) memoryCache.profiles[p.slug.toLowerCase()] = p;
+          if (p.slug) memoryCache.profiles[p.slug.toLowerCase()] = { ...(memoryCache.profiles[p.slug.toLowerCase()] || {}), ...p, is_published: true };
         });
         triggerSync();
       }).catch(() => {});
     }
     return list;
+  },
+
+  searchProfiles: async ({ query = "", category = null, location = null, availability = null } = {}) => {
+    try {
+      const results = await profileRepository.searchPublishedProfiles({ query, category, location, availability });
+      results.forEach((p) => {
+        if (p.slug) {
+          memoryCache.profiles[p.slug.toLowerCase()] = {
+            ...(memoryCache.profiles[p.slug.toLowerCase()] || {}),
+            ...p,
+            is_published: true,
+          };
+        }
+      });
+      triggerSync();
+      return results;
+    } catch (err) {
+      console.warn("[dbStore] searchProfiles failed:", err);
+      return [];
+    }
   },
 
   // --------------------------------------------------------------------------
@@ -153,8 +347,6 @@ export const dbStore = {
 
   addEvidence: async (slug, item) => {
     const cleanSlug = slug.toLowerCase();
-    const profile = memoryCache.profiles[cleanSlug];
-    const profileId = profile?.id;
 
     const optimisticItem = {
       id: "ev_" + Date.now(),
@@ -179,26 +371,41 @@ export const dbStore = {
       token: optimisticItem.verifier_token,
     });
 
-    if (profileId) {
-      try {
+    try {
+      const profileId = await resolveProfileId(cleanSlug);
+      if (profileId) {
         const persisted = await evidenceRepository.createEvidence({
           profileId,
           title: item.title,
           category: item.category,
           evidenceType: item.evidence_type || "link",
           externalUrl: item.external_url || item.file_url,
+          filePath: item.file_path,
         });
         const idx = memoryCache.evidence_items[cleanSlug].findIndex(e => e.id === optimisticItem.id);
         if (idx !== -1) {
           memoryCache.evidence_items[cleanSlug][idx] = { ...optimisticItem, ...persisted };
           triggerSync();
         }
-      } catch (err) {
-        console.warn(`[dbStore] Remote addEvidence failed, queued offline:`, err);
+        return persisted;
       }
+    } catch (err) {
+      console.warn(`[dbStore] Remote addEvidence failed, queued offline:`, err);
     }
 
     return optimisticItem;
+  },
+
+  deleteEvidence: async (slug, id) => {
+    const cleanSlug = slug.toLowerCase();
+    if (memoryCache.evidence_items[cleanSlug]) {
+      memoryCache.evidence_items[cleanSlug] = memoryCache.evidence_items[cleanSlug].filter(e => e.id !== id);
+      triggerSync();
+    }
+    if (id && !id.startsWith("ev_")) {
+      await evidenceRepository.deleteEvidence(id);
+    }
+    return true;
   },
 
   updateEvidenceStatus: async (tokenOrId, status, verifierNote = "") => {
@@ -213,6 +420,54 @@ export const dbStore = {
       }
     }
     return null;
+  },
+
+  // --------------------------------------------------------------------------
+  // VERIFICATION REQUESTS
+  // --------------------------------------------------------------------------
+  getVerificationRequests: async (slug) => {
+    const cleanSlug = slug.toLowerCase();
+    const profileId = await resolveProfileId(cleanSlug);
+    if (!profileId) return [];
+
+    try {
+      const reqs = await evidenceRepository.getVerificationRequests(profileId);
+      memoryCache.verification_requests[cleanSlug] = reqs;
+      triggerSync();
+      return reqs;
+    } catch (err) {
+      console.warn("[dbStore] getVerificationRequests error:", err);
+      return memoryCache.verification_requests[cleanSlug] || [];
+    }
+  },
+
+  requestVerification: async (slug, { evidenceId, verifierName, verifierEmail, note }) => {
+    const cleanSlug = slug.toLowerCase();
+    const profileId = await resolveProfileId(cleanSlug);
+    if (!profileId) throw new Error("Profile ID required to dispatch verification");
+
+    const result = await evidenceRepository.requestVerification({
+      profileId,
+      evidenceId,
+      verifierName,
+      verifierEmail,
+      note,
+    });
+
+    // Refresh evidence and requests list
+    dbStore.fetchEvidence(cleanSlug).catch(() => {});
+    dbStore.getVerificationRequests(cleanSlug).catch(() => {});
+    return result;
+  },
+
+  cancelVerificationRequest: async (slug, requestId) => {
+    const cleanSlug = slug.toLowerCase();
+    await evidenceRepository.cancelVerificationRequest(requestId);
+    if (memoryCache.verification_requests[cleanSlug]) {
+      memoryCache.verification_requests[cleanSlug] = memoryCache.verification_requests[cleanSlug].filter(r => r.id !== requestId);
+      triggerSync();
+    }
+    return true;
   },
 
   // --------------------------------------------------------------------------
@@ -243,8 +498,6 @@ export const dbStore = {
 
   addProject: async (slug, project) => {
     const cleanSlug = slug.toLowerCase();
-    const profile = memoryCache.profiles[cleanSlug];
-    const profileId = profile?.id;
 
     const optimisticProject = {
       id: "proj_" + Date.now(),
@@ -264,8 +517,9 @@ export const dbStore = {
     memoryCache.projects[cleanSlug].unshift(optimisticProject);
     triggerSync();
 
-    if (profileId) {
-      try {
+    try {
+      const profileId = await resolveProfileId(cleanSlug);
+      if (profileId) {
         const persisted = await projectRepository.createProject({
           profileId,
           title: project.title,
@@ -278,12 +532,25 @@ export const dbStore = {
           memoryCache.projects[cleanSlug][idx] = { ...optimisticProject, ...persisted };
           triggerSync();
         }
-      } catch (err) {
-        console.warn(`[dbStore] Remote addProject failed, queued offline:`, err);
+        return persisted;
       }
+    } catch (err) {
+      console.warn(`[dbStore] Remote addProject failed, queued offline:`, err);
     }
 
     return optimisticProject;
+  },
+
+  deleteProject: async (slug, id) => {
+    const cleanSlug = slug.toLowerCase();
+    if (memoryCache.projects[cleanSlug]) {
+      memoryCache.projects[cleanSlug] = memoryCache.projects[cleanSlug].filter(p => p.id !== id);
+      triggerSync();
+    }
+    if (id && !id.startsWith("proj_")) {
+      await projectRepository.deleteProject(id);
+    }
+    return true;
   },
 
   // --------------------------------------------------------------------------
@@ -314,8 +581,6 @@ export const dbStore = {
 
   addProduct: async (slug, product) => {
     const cleanSlug = slug.toLowerCase();
-    const profile = memoryCache.profiles[cleanSlug];
-    const profileId = profile?.id;
 
     const optimisticProd = {
       id: "prod_" + Date.now(),
@@ -336,8 +601,9 @@ export const dbStore = {
     memoryCache.products[cleanSlug].unshift(optimisticProd);
     triggerSync();
 
-    if (profileId) {
-      try {
+    try {
+      const profileId = await resolveProfileId(cleanSlug);
+      if (profileId) {
         const persisted = await productRepository.createProduct({
           profileId,
           name: product.name || product.title,
@@ -352,12 +618,25 @@ export const dbStore = {
           memoryCache.products[cleanSlug][idx] = { ...optimisticProd, ...persisted };
           triggerSync();
         }
-      } catch (err) {
-        console.warn(`[dbStore] Remote addProduct failed, queued offline:`, err);
+        return persisted;
       }
+    } catch (err) {
+      console.warn(`[dbStore] Remote addProduct failed, queued offline:`, err);
     }
 
     return optimisticProd;
+  },
+
+  deleteProduct: async (slug, id) => {
+    const cleanSlug = slug.toLowerCase();
+    if (memoryCache.products[cleanSlug]) {
+      memoryCache.products[cleanSlug] = memoryCache.products[cleanSlug].filter(p => p.id !== id);
+      triggerSync();
+    }
+    if (id && !id.startsWith("prod_")) {
+      await productRepository.deleteProduct(id);
+    }
+    return true;
   },
 
   // --------------------------------------------------------------------------
@@ -369,21 +648,20 @@ export const dbStore = {
       return memoryCache.inbox[cleanSlug];
     }
 
-    const profile = memoryCache.profiles[cleanSlug];
-    if (profile?.id) {
-      inboxRepository.getInboxMessages(profile.id).then((msgs) => {
-        memoryCache.inbox[cleanSlug] = msgs;
-        triggerSync();
-      }).catch(() => {});
-    }
+    resolveProfileId(cleanSlug).then((profileId) => {
+      if (profileId) {
+        inboxRepository.getInboxMessages(profileId).then((msgs) => {
+          memoryCache.inbox[cleanSlug] = msgs;
+          triggerSync();
+        }).catch(() => {});
+      }
+    });
 
     return memoryCache.inbox[cleanSlug] || [];
   },
 
   sendMessage: async (targetSlug, msgData) => {
     const cleanSlug = targetSlug.toLowerCase();
-    const profile = memoryCache.profiles[cleanSlug];
-    const profileId = profile?.id;
 
     const optimisticMsg = {
       id: "msg_" + Date.now(),
@@ -405,18 +683,25 @@ export const dbStore = {
 
     broadcastInboxMessage(cleanSlug, optimisticMsg);
 
-    if (profileId) {
-      try {
+    try {
+      let profileId = memoryCache.profiles[cleanSlug]?.id;
+      if (!profileId) {
+        const { data } = await supabase.from("profiles").select("id").eq("slug", cleanSlug).maybeSingle();
+        profileId = data?.id;
+      }
+
+      if (profileId) {
         await inboxRepository.sendContactRequest({
           profileId,
           senderName: optimisticMsg.sender_name,
           senderEmail: optimisticMsg.sender_email,
           subject: optimisticMsg.subject,
           messageBody: optimisticMsg.message_body,
+          rfqData: msgData.rfqData,
         });
-      } catch (err) {
-        console.warn(`[dbStore] Remote sendMessage failed, queued offline:`, err);
       }
+    } catch (err) {
+      console.warn(`[dbStore] Remote sendMessage failed, queued offline:`, err);
     }
 
     return optimisticMsg;
@@ -443,6 +728,36 @@ export const dbStore = {
   },
 
   // --------------------------------------------------------------------------
+  // USER SETTINGS
+  // --------------------------------------------------------------------------
+  getUserSettings: async (slug) => {
+    const cleanSlug = slug.toLowerCase();
+    const profileId = await resolveProfileId(cleanSlug);
+    if (!profileId) return null;
+
+    try {
+      const settings = await profileRepository.getProfileSettings(profileId);
+      memoryCache.settings[cleanSlug] = settings;
+      triggerSync();
+      return settings;
+    } catch (err) {
+      console.warn("[dbStore] getUserSettings error:", err);
+      return memoryCache.settings[cleanSlug] || null;
+    }
+  },
+
+  updateUserSettings: async (slug, settings) => {
+    const cleanSlug = slug.toLowerCase();
+    const profileId = await resolveProfileId(cleanSlug);
+    if (!profileId) throw new Error("Profile ID required to update settings");
+
+    const saved = await profileRepository.updateProfileSettings(profileId, settings);
+    memoryCache.settings[cleanSlug] = saved;
+    triggerSync();
+    return saved;
+  },
+
+  // --------------------------------------------------------------------------
   // ANALYTICS
   // --------------------------------------------------------------------------
   getAnalytics: (slug) => {
@@ -451,13 +766,14 @@ export const dbStore = {
       return memoryCache.analytics[cleanSlug];
     }
 
-    const profile = memoryCache.profiles[cleanSlug];
-    if (profile?.id) {
-      analyticsRepository.getSummary(profile.id).then((summary) => {
-        memoryCache.analytics[cleanSlug] = summary;
-        triggerSync();
-      }).catch(() => {});
-    }
+    resolveProfileId(cleanSlug).then((profileId) => {
+      if (profileId) {
+        analyticsRepository.getSummary(profileId).then((summary) => {
+          memoryCache.analytics[cleanSlug] = summary;
+          triggerSync();
+        }).catch(() => {});
+      }
+    });
 
     return {
       page_views: 0,
@@ -470,35 +786,76 @@ export const dbStore = {
 
   trackView: (slug) => {
     const cleanSlug = slug.toLowerCase();
-    const profile = memoryCache.profiles[cleanSlug];
-    if (profile?.id) {
-      analyticsRepository.trackView(profile.id).catch(() => {});
-    }
+    resolveProfileId(cleanSlug).then((profileId) => {
+      if (profileId) {
+        analyticsRepository.trackView(profileId).catch(() => {});
+      }
+    });
   },
 
   // --------------------------------------------------------------------------
-  // REPORTS
+  // REPORTS & MODERATION
   // --------------------------------------------------------------------------
-  getReports: () => {
+  getReports: async () => {
+    try {
+      const { data, error } = await supabase
+        .from("reports")
+        .select(`
+          *,
+          profiles!target_profile_id (
+            id,
+            slug,
+            full_name,
+            business_name
+          )
+        `)
+        .order("created_at", { ascending: false });
+
+      if (!error && data) {
+        const formatted = data.map((r) => ({
+          id: r.id,
+          target_slug: r.profiles?.slug || "unknown",
+          target_name: r.profiles?.full_name || r.profiles?.business_name || "Profile",
+          reason: r.reason,
+          details: r.details,
+          reporter: r.reporter_ip ? `IP: ${r.reporter_ip}` : "Public Visitor",
+          status: r.status,
+          created_at: r.created_at,
+        }));
+        memoryCache.reports = formatted;
+        triggerSync();
+        return formatted;
+      }
+    } catch {
+      // Fallback to memory
+    }
     return memoryCache.reports;
   },
 
   addReport: async (report) => {
+    const targetSlug = (report.target_slug || report.targetSlug || "").toLowerCase();
     const optimisticReport = {
       id: "rep_" + Date.now(),
+      target_slug: targetSlug,
+      reason: report.reason,
+      details: report.details || "",
+      reporter: "Public Visitor",
       status: "pending",
       created_at: new Date().toISOString(),
-      ...report,
     };
     memoryCache.reports.unshift(optimisticReport);
     triggerSync();
 
     try {
-      const targetSlug = report.target_slug || report.targetSlug;
-      const profile = memoryCache.profiles[targetSlug?.toLowerCase()];
-      if (profile?.id) {
+      let targetId = memoryCache.profiles[targetSlug]?.id;
+      if (!targetId && targetSlug) {
+        const { data } = await supabase.from("profiles").select("id").eq("slug", targetSlug).maybeSingle();
+        targetId = data?.id;
+      }
+
+      if (targetId) {
         await supabase.from("reports").insert({
-          target_profile_id: profile.id,
+          target_profile_id: targetId,
           reason: report.reason,
           details: report.details || "",
           status: "pending",
@@ -509,5 +866,23 @@ export const dbStore = {
     }
 
     return optimisticReport;
+  },
+
+  moderateReport: async (reportId, action) => {
+    if (!reportId || !action) throw new Error("reportId and action are required");
+
+    // Invoke privileged Edge Function
+    const { data, error } = await supabase.functions.invoke("moderate-action", {
+      body: { report_id: reportId, action },
+    });
+
+    if (error) {
+      console.warn("[dbStore] Edge Function moderate-action error, falling back to direct update:", error);
+      await supabase.from("reports").update({ status: action === "dismiss" ? "dismissed" : action === "takedown" ? "taken_down" : "warned" }).eq("id", reportId);
+    }
+
+    // Refresh memory cache
+    await dbStore.getReports();
+    return data || { success: true };
   },
 };

@@ -10,7 +10,7 @@ import { authService } from '../lib/authService';
 
 export default function DashboardHomePage({ setActivePage }) {
   const [currentUser, setCurrentUser] = useState(() => authService.getCurrentUser());
-  const slug = currentUser?.slug || 'alexrivera';
+  const slug = currentUser?.slug || 'profile';
   
   const [profile, setProfile] = useState(() => dbStore.getProfile(slug));
   const [evidenceList, setEvidenceList] = useState(() => dbStore.getEvidence(slug));
@@ -21,7 +21,7 @@ export default function DashboardHomePage({ setActivePage }) {
     const load = () => {
       const u = authService.getCurrentUser();
       setCurrentUser(u);
-      const userSlug = u?.slug || 'alexrivera';
+      const userSlug = u?.slug || 'profile';
       setProfile(dbStore.getProfile(userSlug));
       setEvidenceList(dbStore.getEvidence(userSlug));
       setInboxList(dbStore.getMessages(userSlug));
@@ -51,7 +51,7 @@ export default function DashboardHomePage({ setActivePage }) {
               <LayoutDashboard className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-xl font-black tracking-tight text-slate-900">Owner Dashboard</h1>
+              <h1 className="text-xl font-black tracking-tight text-slate-900">Dashboard</h1>
               <p className="text-xs font-mono font-extrabold text-slate-600">backed.network/{slug}</p>
             </div>
           </div>
@@ -73,7 +73,7 @@ export default function DashboardHomePage({ setActivePage }) {
               className="px-3.5 py-2 rounded-xl bg-emerald-300 hover:bg-emerald-400 text-slate-900 font-black text-xs border-2 border-slate-900 shadow-[3px_3px_0px_0px_#0f172a] transition-all flex items-center gap-1.5 cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>Add proof</span>
+              <span>Add work sample</span>
             </button>
 
             <button
@@ -98,13 +98,13 @@ export default function DashboardHomePage({ setActivePage }) {
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="space-y-1">
                 <span className="pill-header inline-block text-xs font-mono bg-slate-900 text-white">
-                  ★ DETERMINISTIC PROFILE ENGINE
+                  ★ LIVE PROFILE
                 </span>
                 <h2 className="text-2xl font-black text-slate-900">
-                  Welcome back, {profile.full_name || 'Alex'}!
+                  Welcome back, {currentUser?.fullName || profile?.full_name || 'there'}!
                 </h2>
                 <p className="text-xs font-extrabold text-slate-800">
-                  Your page completion status is <span className="font-mono text-emerald-900 font-black bg-white px-2 py-0.5 rounded border border-slate-900">{profile.completion_score || 90}% Complete</span>.
+                  Your page completion status is <span className="font-mono text-emerald-900 font-black bg-white px-2 py-0.5 rounded border border-slate-900">{profile?.completion_score || 85}% Complete</span>.
                 </p>
               </div>
 
@@ -112,7 +112,7 @@ export default function DashboardHomePage({ setActivePage }) {
                 onClick={() => setActivePage('dashboard-insights')}
                 className="px-4 py-2.5 rounded-xl bg-slate-900 text-white text-xs font-black shadow-[3px_3px_0px_0px_#059669] border-2 border-slate-900 hover:bg-slate-800 cursor-pointer shrink-0"
               >
-                Analytics Insights →
+                View Insights →
               </button>
             </div>
           </div>
@@ -123,12 +123,12 @@ export default function DashboardHomePage({ setActivePage }) {
               <span className="text-[10px] font-mono font-black text-slate-500 uppercase flex items-center gap-1">
                 <Eye className="w-3.5 h-3.5 text-blue-600" /> Page Views
               </span>
-              <p className="text-2xl font-black text-slate-900 font-mono">{analytics.page_views || 1420}</p>
+              <p className="text-2xl font-black text-slate-900 font-mono">{analytics?.page_views || 0}</p>
             </div>
 
             <div className="bg-white p-4 rounded-2xl border-2 border-slate-900 shadow-[3px_3px_0px_0px_#0f172a] space-y-1">
               <span className="text-[10px] font-mono font-black text-slate-500 uppercase flex items-center gap-1">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> Verified Proofs
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> Work Samples
               </span>
               <p className="text-2xl font-black text-slate-900 font-mono">{evidenceList.length}</p>
             </div>
@@ -138,7 +138,7 @@ export default function DashboardHomePage({ setActivePage }) {
               className="bg-white p-4 rounded-2xl border-2 border-slate-900 shadow-[3px_3px_0px_0px_#0f172a] space-y-1 cursor-pointer hover:bg-amber-50"
             >
               <span className="text-[10px] font-mono font-black text-slate-500 uppercase flex items-center gap-1">
-                <Mail className="w-3.5 h-3.5 text-amber-600" /> Inbox Messages
+                <Mail className="w-3.5 h-3.5 text-amber-600" /> Messages
               </span>
               <div className="flex items-center gap-2">
                 <p className="text-2xl font-black text-slate-900 font-mono">{inboxList.length}</p>
@@ -152,18 +152,18 @@ export default function DashboardHomePage({ setActivePage }) {
 
             <div className="bg-white p-4 rounded-2xl border-2 border-slate-900 shadow-[3px_3px_0px_0px_#0f172a] space-y-1">
               <span className="text-[10px] font-mono font-black text-slate-500 uppercase flex items-center gap-1">
-                <CheckCircle2 className="w-3.5 h-3.5 text-purple-600" /> Trust Score
+                <CheckCircle2 className="w-3.5 h-3.5 text-purple-600" /> Completion
               </span>
-              <p className="text-2xl font-black text-slate-900 font-mono">98 / 100</p>
+              <p className="text-2xl font-black text-slate-900 font-mono">{profile?.completion_score || 85}%</p>
             </div>
           </div>
 
-          {/* Active Verified Proof Cards */}
+          {/* Active Verified Work Samples */}
           <div className="bg-white rounded-3xl p-6 border-3 border-slate-900 shadow-[6px_6px_0px_0px_#0f172a] space-y-4">
             <div className="flex items-center justify-between border-b-2 border-slate-900/20 pb-3">
               <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
                 <ShieldCheck className="w-5 h-5 text-emerald-600" />
-                <span>Active Verified Proof Cards ({evidenceList.length})</span>
+                <span>Verified Work Samples ({evidenceList.length})</span>
               </h3>
               <button 
                 onClick={() => setActivePage('dashboard-evidence')}
@@ -181,7 +181,7 @@ export default function DashboardHomePage({ setActivePage }) {
                       {item.category}
                     </span>
                     <h4 className="text-sm font-black text-slate-900">{item.title}</h4>
-                    <p className="text-xs font-bold text-slate-600 italic">"{item.verifier_note || 'Peer verified claim'}"</p>
+                    <p className="text-xs font-bold text-slate-600 italic">"{item.verifier_note || 'Verified work item'}"</p>
                   </div>
                   <span className="stamp-verified text-[10px] py-1 px-3 shrink-0">
                     ★ {item.status.toUpperCase()}
@@ -207,7 +207,7 @@ export default function DashboardHomePage({ setActivePage }) {
                 onClick={() => setActivePage('dashboard-profile')}
                 className="w-full p-3 rounded-2xl bg-amber-100 hover:bg-amber-200 border-2 border-slate-900 text-left font-black text-xs text-slate-900 flex items-center justify-between transition-all cursor-pointer shadow-[2px_2px_0px_0px_#0f172a]"
               >
-                <span>Edit Profile & Bio</span>
+                <span>Edit Profile</span>
                 <ArrowRight className="w-4 h-4 text-slate-900" />
               </button>
 
@@ -215,7 +215,7 @@ export default function DashboardHomePage({ setActivePage }) {
                 onClick={() => setActivePage('dashboard-projects')}
                 className="w-full p-3 rounded-2xl bg-slate-100 hover:bg-slate-200 border-2 border-slate-900 text-left font-black text-xs text-slate-900 flex items-center justify-between transition-all cursor-pointer shadow-[2px_2px_0px_0px_#0f172a]"
               >
-                <span>Manage Key Projects</span>
+                <span>Featured Projects</span>
                 <ArrowRight className="w-4 h-4 text-slate-900" />
               </button>
 
@@ -223,7 +223,7 @@ export default function DashboardHomePage({ setActivePage }) {
                 onClick={() => setActivePage('dashboard-inbox')}
                 className="w-full p-3 rounded-2xl bg-emerald-100 hover:bg-emerald-200 border-2 border-slate-900 text-left font-black text-xs text-slate-900 flex items-center justify-between transition-all cursor-pointer shadow-[2px_2px_0px_0px_#0f172a]"
               >
-                <span>Inquiries & Inbox ({unreadCount})</span>
+                <span>Messages ({unreadCount})</span>
                 <ArrowRight className="w-4 h-4 text-slate-900" />
               </button>
 
@@ -231,7 +231,7 @@ export default function DashboardHomePage({ setActivePage }) {
                 onClick={() => setActivePage('dashboard-settings')}
                 className="w-full p-3 rounded-2xl bg-purple-100 hover:bg-purple-200 border-2 border-slate-900 text-left font-black text-xs text-slate-900 flex items-center justify-between transition-all cursor-pointer shadow-[2px_2px_0px_0px_#0f172a]"
               >
-                <span>Security & MFA Settings</span>
+                <span>Account Settings</span>
                 <Settings className="w-4 h-4 text-slate-900" />
               </button>
             </div>
@@ -240,7 +240,7 @@ export default function DashboardHomePage({ setActivePage }) {
           {/* Inbox Preview Card */}
           <div className="bg-[#fef08a] rounded-3xl p-6 border-3 border-slate-900 shadow-[6px_6px_0px_0px_#0f172a] space-y-3">
             <span className="text-[10px] font-mono font-black text-slate-900 uppercase tracking-wider block">
-              RECENT INCOMING INQUIRY
+              RECENT MESSAGE
             </span>
             {inboxList.length > 0 ? (
               <div className="bg-white p-4 rounded-2xl border-2 border-slate-900 shadow-[2px_2px_0px_0px_#0f172a] space-y-1.5">

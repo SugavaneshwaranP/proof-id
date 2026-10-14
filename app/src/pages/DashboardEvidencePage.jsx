@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  ShieldCheck, Paperclip, Plus, Eye, Copy, Check, X, Shield, Link2, Upload
+  ShieldCheck, Paperclip, Plus, Eye, Copy, Check, X, Shield, Link2, Upload, Trash2, Loader2
 } from 'lucide-react';
 import { dbStore } from '../lib/dbStore';
 import { authService } from '../lib/authService';
+import { evidenceRepository } from '../lib/repositories/evidenceRepository';
+import { compressImage } from '../lib/imageCompressor';
 
 export default function DashboardEvidencePage({ setActivePage, onOpenEvidence }) {
-  const currentUser = authService.getCurrentUser();
-  const slug = currentUser?.slug || 'alexrivera';
+  const [currentUser, setCurrentUser] = useState(() => authService.getCurrentUser());
+  const slug = currentUser?.slug || 'profile';
 
   const [evidenceList, setEvidenceList] = useState(() => dbStore.getEvidence(slug));
   const [showAddModal, setShowAddModal] = useState(false);
@@ -17,33 +19,58 @@ export default function DashboardEvidencePage({ setActivePage, onOpenEvidence })
   const [verifierName, setVerifierName] = useState('');
   const [verifierNote, setVerifierNote] = useState('');
   const [fileUrl, setFileUrl] = useState('');
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
   const [copiedToken, setCopiedToken] = useState('');
 
   useEffect(() => {
-    const load = () => setEvidenceList(dbStore.getEvidence(slug));
+    const u = authService.getCurrentUser();
+    if (u) setCurrentUser(u);
+    const activeSlug = u?.slug || slug;
+
+    const load = () => setEvidenceList(dbStore.getEvidence(activeSlug));
     load();
     const unsub = dbStore.onSync(load);
     return () => unsub();
   }, [slug]);
 
-  const handleAddProof = (e) => {
+  const handleAddProof = async (e) => {
     if (e) e.preventDefault();
     if (!title.trim()) return;
 
-    dbStore.addEvidence(slug, {
-      title: title.trim(),
-      category,
-      verifier_name: verifierName.trim() || 'Peer Verifier',
-      verifier_note: verifierNote.trim(),
-      file_url: fileUrl.trim() || 'https://github.com/project-proof',
-    });
+    setIsUploading(true);
+    let uploadedFilePath = null;
 
-    setTitle('');
-    setVerifierName('');
-    setVerifierNote('');
-    setFileUrl('');
-    setShowAddModal(false);
+    try {
+      if (selectedFile) {
+        const fileToUpload = await compressImage(selectedFile);
+        const uploadResult = await evidenceRepository.uploadEvidenceFile(fileToUpload);
+        uploadedFilePath = uploadResult.path;
+      }
+
+      await dbStore.addEvidence(slug, {
+        title: title.trim(),
+        category,
+        evidence_type: selectedFile ? 'file' : 'link',
+        verifier_name: verifierName.trim() || 'Colleague / Client',
+        verifier_note: verifierNote.trim(),
+        file_url: fileUrl.trim() || (uploadedFilePath ? `evidence-vault://${uploadedFilePath}` : 'https://example.com/project'),
+        file_path: uploadedFilePath,
+      });
+
+      setTitle('');
+      setVerifierName('');
+      setVerifierNote('');
+      setFileUrl('');
+      setSelectedFile(null);
+      setShowAddModal(false);
+    } catch (err) {
+      alert(`Failed to add proof: ${err.message}`);
+    } finally {
+      setIsUploading(false);
+    }
   };
+
 
   const handleCopyLink = (token) => {
     const verifUrl = `${window.location.origin}/confirm-claim?token=${token}`;
@@ -54,14 +81,14 @@ export default function DashboardEvidencePage({ setActivePage, onOpenEvidence })
 
   return (
     <div className="space-y-6 pb-20 max-w-4xl mx-auto px-3 sm:px-6 lg:px-8 pt-6 font-sans desk-grid-background">
-      {/* Main Dossier Container (Criterion 5: Fully Usable on Mobile <375px) */}
+      {/* Main Container */}
       <div className="dossier-card rounded-3xl p-4 sm:p-8 md:p-10 border-3 border-slate-900 shadow-[6px_6px_0px_0px_#0f172a] sm:shadow-[8px_8px_0px_0px_#0f172a] relative overflow-hidden bg-white text-slate-900 space-y-5 sm:space-y-6">
         {/* Top Metallic Clip */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b-2 border-slate-900 pb-3 gap-3">
           <div className="dossier-clip relative top-0 left-0">
             <Paperclip className="w-3.5 h-3.5 text-amber-300" />
             <span className="uppercase font-mono font-black text-[10px] sm:text-xs">
-              PROOF & EVIDENCE CARDS
+              WORK & CREDENTIALS
             </span>
           </div>
 
@@ -71,17 +98,17 @@ export default function DashboardEvidencePage({ setActivePage, onOpenEvidence })
             className="px-3 sm:px-4 py-2 rounded-xl bg-emerald-300 hover:bg-emerald-400 border-2 border-slate-900 text-xs font-black text-slate-900 shadow-[3px_3px_0px_0px_#0f172a] transition-all flex items-center gap-1.5 cursor-pointer min-h-[40px] self-end sm:self-auto"
           >
             <Plus className="w-4 h-4 text-slate-900 shrink-0" />
-            <span>Add New Proof</span>
+            <span>Add Work Sample</span>
           </button>
         </div>
 
         {/* Title */}
         <div className="space-y-1">
           <h1 className="text-xl sm:text-3xl font-black text-slate-900 tracking-tight">
-            “Your Verified Evidence Portfolio”
+            Your Work & Credentials
           </h1>
           <p className="text-xs font-bold text-slate-700">
-            Cryptographically and peer-confirmed artifacts for backed.network/{slug}
+            Confirmed work, certificates, and projects for your profile
           </p>
         </div>
 
@@ -111,7 +138,7 @@ export default function DashboardEvidencePage({ setActivePage, onOpenEvidence })
                 )}
 
                 <p className="text-[11px] font-mono font-bold text-slate-600 truncate">
-                  Verifier: {item.verifier_name || 'Pending Peer Verification'}
+                  Confirmed by: {item.verifier_name || 'Pending confirmation'}
                 </p>
               </div>
 
@@ -120,7 +147,7 @@ export default function DashboardEvidencePage({ setActivePage, onOpenEvidence })
                   type="button"
                   onClick={() => handleCopyLink(item.verifier_token)}
                   className="px-2.5 py-1.5 rounded-xl bg-white hover:bg-slate-100 border-2 border-slate-900 text-xs font-mono font-black text-slate-900 shadow-[2px_2px_0px_0px_#0f172a] transition-all flex items-center gap-1 cursor-pointer min-h-[38px]"
-                  title="Copy verifier access link"
+                  title="Copy confirmation link"
                 >
                   {copiedToken === item.verifier_token ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
                   <span>{copiedToken === item.verifier_token ? 'Copied!' : 'Copy Link'}</span>
@@ -130,9 +157,21 @@ export default function DashboardEvidencePage({ setActivePage, onOpenEvidence })
                   type="button"
                   onClick={() => onOpenEvidence && onOpenEvidence(item)}
                   className="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 border-2 border-slate-900 text-white cursor-pointer min-h-[38px] min-w-[38px] flex items-center justify-center"
-                  title="Inspect Proof Card"
+                  title="View details"
                 >
                   <Eye className="w-4 h-4 text-emerald-300" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await dbStore.deleteEvidence(slug, item.id);
+                    setEvidenceList(dbStore.getEvidence(slug));
+                  }}
+                  className="p-2 rounded-xl border border-slate-300 text-slate-500 hover:text-red-700 hover:bg-red-50 cursor-pointer min-h-[38px] min-w-[38px] flex items-center justify-center"
+                  title="Delete sample"
+                >
+                  <Trash2 className="w-4 h-4" />
                 </button>
               </div>
             </div>
@@ -140,7 +179,7 @@ export default function DashboardEvidencePage({ setActivePage, onOpenEvidence })
         </div>
       </div>
 
-      {/* ADD PROOF MODAL (Criterion 5: Fully Usable on Mobile <375px) */}
+      {/* ADD PROOF MODAL */}
       <AnimatePresence>
         {showAddModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/80 backdrop-blur-md overflow-y-auto">
@@ -153,7 +192,7 @@ export default function DashboardEvidencePage({ setActivePage, onOpenEvidence })
               <div className="flex items-center justify-between pb-3 border-b-2 border-slate-900">
                 <h3 className="text-base sm:text-lg font-black flex items-center gap-2 truncate">
                   <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0" />
-                  <span>Attach New Proof Item</span>
+                  <span>Add New Work Sample</span>
                 </h3>
                 <button 
                   onClick={() => setShowAddModal(false)} 
@@ -166,13 +205,13 @@ export default function DashboardEvidencePage({ setActivePage, onOpenEvidence })
               <form onSubmit={handleAddProof} className="space-y-3.5">
                 <div>
                   <label className="text-xs font-mono font-black uppercase flex items-center justify-between mb-1">
-                    <span>Claim Title *</span>
+                    <span>Title or Project Name *</span>
                     <span className="text-[10px] text-emerald-800 font-black">REQUIRED</span>
                   </label>
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Architected High-Throughput Canvas Engine"
+                    placeholder="e.g. Mobile App Redesign or ISO Certificate"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     className="w-full bg-white border-2 border-slate-900 rounded-xl px-3.5 py-2 text-xs sm:text-sm font-bold focus:outline-none min-h-[44px]"
@@ -188,32 +227,48 @@ export default function DashboardEvidencePage({ setActivePage, onOpenEvidence })
                   >
                     <option value="Engineering Work">Engineering Work</option>
                     <option value="Certification">Certification</option>
-                    <option value="Security & Crypto">Security & Crypto</option>
+                    <option value="Security & Compliance">Security & Compliance</option>
                     <option value="Quality Assurance">Quality Assurance</option>
-                    <option value="Aerospace & Defense">Aerospace & Defense</option>
+                    <option value="Product Design">Product Design</option>
                   </select>
                 </div>
 
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="text-xs font-mono font-black uppercase">Artifact Link or Document</label>
-                    <span className="text-[10px] font-mono text-slate-500 font-bold uppercase">(Optional)</span>
+                    <label className="text-xs font-mono font-black uppercase">Work Link or Document</label>
+                    <span className="text-[10px] font-mono text-slate-500 font-bold uppercase">(Link or File)</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      placeholder="https://github.com/..."
-                      value={fileUrl}
-                      onChange={(e) => setFileUrl(e.target.value)}
-                      className="w-full bg-white border-2 border-slate-900 rounded-xl px-3.5 py-2 text-xs font-bold focus:outline-none min-h-[44px]"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setFileUrl('https://proof.backed.network/audit-cert.pdf')}
-                      className="bg-amber-300 hover:bg-amber-400 text-slate-900 font-mono font-black text-xs px-2.5 py-2 rounded-xl border border-slate-900 shrink-0 min-h-[44px] cursor-pointer"
-                    >
-                      Simulate
-                    </button>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        placeholder="https://github.com/... or external URL"
+                        value={fileUrl}
+                        onChange={(e) => setFileUrl(e.target.value)}
+                        className="w-full bg-white border-2 border-slate-900 rounded-xl px-3.5 py-2 text-xs font-bold focus:outline-none min-h-[44px]"
+                      />
+                    </div>
+                    
+                    <div className="flex items-center gap-2 p-2.5 bg-slate-50 border-2 border-dashed border-slate-900 rounded-xl">
+                      <Upload className="w-4 h-4 text-slate-700 shrink-0" />
+                      <input
+                        type="file"
+                        accept=".pdf,.png,.jpg,.jpeg,.webp"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) {
+                            setSelectedFile(f);
+                            if (!title) setTitle(f.name.replace(/\.[^/.]+$/, ''));
+                          }
+                        }}
+                        className="text-xs font-mono file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-2 file:border-slate-900 file:bg-white file:text-xs file:font-black file:cursor-pointer"
+                      />
+                    </div>
+                    {selectedFile && (
+                      <span className="text-[10px] font-mono font-bold text-emerald-800 block">
+                        Selected document: {selectedFile.name} ({(selectedFile.size / 1024).toFixed(1)} KB) — will upload to private evidence-vault
+                      </span>
+                    )}
                   </div>
                 </div>
 

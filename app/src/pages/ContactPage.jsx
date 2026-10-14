@@ -4,6 +4,7 @@ import {
   Mail, Phone, MapPin, Clock, Send, ShieldCheck, CheckCircle2, 
   HelpCircle, MessageSquare, Building2, User, Paperclip
 } from 'lucide-react';
+import { dbStore } from '../lib/dbStore';
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -14,11 +15,30 @@ export default function ContactPage() {
     message: ''
   });
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.name || !formData.email || !formData.message) return;
-    setSubmitted(true);
+    setIsSubmitting(true);
+    try {
+      await dbStore.sendMessage('alexrivera', {
+        sender_name: formData.name,
+        sender_email: formData.email,
+        subject: `[${formData.subject.toUpperCase()}] Inquiry from ${formData.name}`,
+        message: formData.message,
+      });
+      await dbStore.addReport({
+        target_slug: 'alexrivera',
+        reason: `Contact Inquiry: [${formData.subject}] from ${formData.name} (${formData.email})`,
+        details: formData.message,
+      });
+    } catch (err) {
+      console.warn("Contact transmission queued:", err);
+    } finally {
+      setIsSubmitting(false);
+      setSubmitted(true);
+    }
   };
 
   return (
@@ -27,13 +47,13 @@ export default function ContactPage() {
       {/* Header */}
       <div className="text-center max-w-3xl mx-auto space-y-4">
         <span className="dossier-stamp">
-          ★ INQUIRY DOSSIER ★
+          ★ CONTACT US ★
         </span>
         <h1 className="text-4xl sm:text-5xl font-extrabold text-white tracking-tight">
-          Connect With Our Verification Team
+          Get in Touch With Our Team
         </h1>
         <p className="text-slate-300 text-base sm:text-lg">
-          Have questions about B2B supplier verification, API integrations, or proof storage? We are here to help.
+          Have questions about creating your page, verifying work, or business accounts? We are here to help.
         </p>
       </div>
 
@@ -45,7 +65,7 @@ export default function ContactPage() {
           <div className="dossier-card rounded-3xl p-6 border-2 border-slate-800 space-y-4">
             <div className="dossier-clip">
               <Paperclip className="w-3.5 h-3.5 text-cyan-400" />
-              <span>DIRECT CONTACT FILE</span>
+              <span>DIRECT CONTACT</span>
             </div>
 
             <div className="flex items-center gap-3 pt-2">
@@ -73,7 +93,7 @@ export default function ContactPage() {
           <div className="dossier-card rounded-3xl p-6 border-2 border-slate-800 space-y-4">
             <div className="dossier-clip">
               <Paperclip className="w-3.5 h-3.5 text-cyan-400" />
-              <span>LOCATION DOSSIER</span>
+              <span>OFFICE LOCATION</span>
             </div>
 
             <div className="flex items-center gap-3 pt-2">
@@ -205,10 +225,11 @@ export default function ContactPage() {
 
               <button
                 type="submit"
-                className="w-full py-4 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-400 hover:from-blue-500 hover:to-cyan-300 text-white font-bold text-base shadow-lg shadow-blue-500/25 transition-all flex items-center justify-center gap-2 cursor-pointer border border-blue-400/30"
+                disabled={isSubmitting}
+                className="w-full py-4 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-400 hover:from-blue-500 hover:to-cyan-300 text-white font-bold text-base shadow-lg shadow-blue-500/25 transition-all flex items-center justify-center gap-2 cursor-pointer border border-blue-400/30 disabled:opacity-50"
               >
                 <Send className="w-4 h-4" />
-                <span>Transmit Official Inquiry</span>
+                <span>{isSubmitting ? 'Transmitting to Supabase...' : 'Transmit Official Inquiry'}</span>
               </button>
 
             </form>

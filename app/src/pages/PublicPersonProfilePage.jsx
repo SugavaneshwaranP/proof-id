@@ -59,7 +59,15 @@ export default function PublicPersonProfilePage({ slug = 'alexrivera', onOpenEvi
     };
   }, [profile?.full_name, slug]);
 
-  const fullUrl = `https://backed.network/${slug}`;
+  // If this profile is a business, route to the business profile view
+  useEffect(() => {
+    if (profile?.profile_type === 'business' && setActivePage) {
+      setActivePage('public-business-profile', slug);
+    }
+  }, [profile?.profile_type, slug, setActivePage]);
+
+  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://backed.network';
+  const fullUrl = `${origin}/${slug}`;
 
   // Criterion 7: Login-Free Shareability - Copy URL
   const handleCopyLink = () => {
@@ -178,24 +186,24 @@ ${evidenceList.map((e) => `- ${e.title} [${e.status?.toUpperCase()}] (Verifier: 
               <span>{liveVerificationToast}</span>
             </div>
             <span className="text-[10px] font-mono font-bold uppercase bg-slate-900 text-white px-2 py-0.5 rounded-lg">
-              REAL-TIME SYNC
+              LIVE UPDATE
             </span>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Main Person Profile Dossier Card */}
+      {/* Main Person Profile Card */}
       <div className="dossier-card rounded-3xl p-4 sm:p-8 md:p-10 border-3 border-slate-900 shadow-[6px_6px_0px_0px_#0f172a] sm:shadow-[8px_8px_0px_0px_#0f172a] relative overflow-hidden bg-white text-slate-900 space-y-6 sm:space-y-8">
-        {/* Top Metallic Clip & Secondary Utilities Bar (Criterion 4 & Criterion 7) */}
+        {/* Top Metallic Clip & Secondary Utilities Bar */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b-2 border-slate-900/40 pb-3 gap-3">
           <div className="dossier-clip relative top-0 left-0">
             <Paperclip className="w-3.5 h-3.5 text-amber-300" />
             <span className="uppercase font-mono font-black text-[10px] sm:text-xs">
-              VERIFIED PERSON DOSSIER • {slug}
+              VERIFIED PROFILE • @{slug}
             </span>
           </div>
 
-          {/* Secondary Action Toolbar: All Login-Free (Criterion 7) */}
+          {/* Secondary Action Toolbar: All Login-Free */}
           <div className="flex flex-wrap items-center gap-1.5 self-end sm:self-auto no-print">
             {/* Copy Link */}
             <button
@@ -208,7 +216,7 @@ ${evidenceList.map((e) => `- ${e.title} [${e.status?.toUpperCase()}] (Verifier: 
               <span>{copiedLink ? 'Copied Link!' : 'Copy Link'}</span>
             </button>
 
-            {/* Copy Spec Summary */}
+            {/* Copy Summary */}
             <button
               type="button"
               onClick={handleCopySummary}
@@ -216,10 +224,10 @@ ${evidenceList.map((e) => `- ${e.title} [${e.status?.toUpperCase()}] (Verifier: 
               className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 border-2 border-slate-900 text-[11px] font-mono font-black text-slate-900 shadow-[2px_2px_0px_0px_#0f172a] transition-all flex items-center gap-1 cursor-pointer min-h-[36px]"
             >
               {copiedSummary ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <FileText className="w-3.5 h-3.5" />}
-              <span className="hidden xs:inline">{copiedSummary ? 'Copied Summary!' : 'Copy Spec'}</span>
+              <span className="hidden xs:inline">{copiedSummary ? 'Copied Summary!' : 'Copy Summary'}</span>
             </button>
 
-            {/* Print / Export PDF (Criterion 7) */}
+            {/* Print / Export PDF */}
             <button
               type="button"
               onClick={handlePrint}
@@ -244,7 +252,6 @@ ${evidenceList.map((e) => `- ${e.title} [${e.status?.toUpperCase()}] (Verifier: 
 
         {/* Profile Hero Section */}
         <div className="flex flex-col md:flex-row gap-5 sm:gap-6 items-start">
-          {/* Pre-scaled web avatar (Criterion 6) */}
           <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-3xl border-3 border-slate-900 overflow-hidden shadow-[4px_4px_0px_0px_#0f172a] shrink-0 bg-amber-200">
             <img 
               src={getPreScaledImageUrl(profile.avatar_url, 200, 200)} 
@@ -283,7 +290,7 @@ ${evidenceList.map((e) => `- ${e.title} [${e.status?.toUpperCase()}] (Verifier: 
             </div>
           </div>
 
-          {/* CRITERION 4: EXACTLY ONE PROMINENT PRIMARY CALL-TO-ACTION */}
+          {/* Primary Action Button */}
           <div className="w-full md:w-auto shrink-0 pt-2 md:pt-0 no-print">
             <button
               type="button"
@@ -292,7 +299,7 @@ ${evidenceList.map((e) => `- ${e.title} [${e.status?.toUpperCase()}] (Verifier: 
               className="w-full md:w-auto px-6 py-4 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-black text-xs sm:text-sm uppercase tracking-wider shadow-[4px_4px_0px_0px_#059669] border-2 border-slate-900 transition-all cursor-pointer flex items-center justify-center gap-2.5 min-h-[48px]"
             >
               <MessageSquare className="w-4 h-4 text-emerald-300 shrink-0" />
-              <span>Contact Person</span>
+              <span>Send Message</span>
             </button>
           </div>
         </div>
@@ -300,7 +307,7 @@ ${evidenceList.map((e) => `- ${e.title} [${e.status?.toUpperCase()}] (Verifier: 
         {/* Bio Section */}
         <div className="bg-[#fef9c3] p-4 sm:p-5 rounded-2xl border-2 border-slate-900 shadow-[3px_3px_0px_0px_#0f172a] space-y-1.5">
           <span className="text-[10px] font-mono font-black text-slate-500 uppercase tracking-wider block">
-            VERIFIED BIOGRAPHY & STATEMENT
+            ABOUT ME
           </span>
           <p className="text-xs sm:text-sm font-bold text-slate-900 leading-relaxed">
             {profile.bio}
@@ -311,7 +318,7 @@ ${evidenceList.map((e) => `- ${e.title} [${e.status?.toUpperCase()}] (Verifier: 
         {profile.capabilities && profile.capabilities.length > 0 && (
           <div className="space-y-3 pt-2">
             <span className="text-xs font-mono font-black text-slate-900 uppercase tracking-wider block">
-              CONFIRMED CAPABILITIES & SKILLS
+              SKILLS & EXPERTISE
             </span>
             <div className="flex flex-wrap gap-2">
               {profile.capabilities.map((cap, idx) => (
@@ -321,7 +328,7 @@ ${evidenceList.map((e) => `- ${e.title} [${e.status?.toUpperCase()}] (Verifier: 
                 >
                   <span>{cap.name}</span>
                   <span className="bg-amber-300 px-1.5 py-0.5 rounded-md text-[10px] font-mono font-black border border-slate-900">
-                    +{cap.endorsement_count || 10} verified
+                    +{cap.endorsement_count || 1} verified
                   </span>
                 </div>
               ))}
@@ -334,9 +341,9 @@ ${evidenceList.map((e) => `- ${e.title} [${e.status?.toUpperCase()}] (Verifier: 
           <div className="flex items-center justify-between">
             <h3 className="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">
               <ShieldCheck className="w-5 h-5 text-emerald-600" />
-              <span>Verified Proof Cards ({evidenceList.length})</span>
+              <span>Verified Work Samples ({evidenceList.length})</span>
             </h3>
-            <span className="text-[11px] font-mono font-bold text-slate-500 uppercase">PEER VERIFIED</span>
+            <span className="text-[11px] font-mono font-bold text-slate-500 uppercase">VERIFIED BY COLLEAGUES</span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4">
@@ -366,8 +373,8 @@ ${evidenceList.map((e) => `- ${e.title} [${e.status?.toUpperCase()}] (Verifier: 
                 )}
 
                 <div className="flex items-center justify-between text-[11px] font-mono font-bold text-slate-600 pt-1 border-t border-slate-900/20">
-                  <span className="truncate">Verifier: {ev.verifier_name || 'Confirmed Peer'}</span>
-                  <span className="text-emerald-800 underline shrink-0">Inspect Proof →</span>
+                  <span className="truncate">Confirmed by: {ev.verifier_name || 'Colleague'}</span>
+                  <span className="text-emerald-800 underline shrink-0">View Work Sample →</span>
                 </div>
               </div>
             ))}
@@ -411,11 +418,11 @@ ${evidenceList.map((e) => `- ${e.title} [${e.status?.toUpperCase()}] (Verifier: 
           className="w-full py-3.5 rounded-2xl bg-slate-900 text-white font-black text-xs uppercase tracking-wider shadow-[4px_4px_0px_0px_#059669] border-2 border-slate-900 flex items-center justify-center gap-2 cursor-pointer min-h-[48px]"
         >
           <MessageSquare className="w-4 h-4 text-emerald-300" />
-          <span>Contact Person</span>
+          <span>Send Message</span>
         </button>
       </div>
 
-      {/* CONTACT MODAL (Criterion 5: Fully Usable on Mobile <375px) */}
+      {/* CONTACT MODAL */}
       <AnimatePresence>
         {showContactModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/80 backdrop-blur-md overflow-y-auto">
@@ -442,8 +449,8 @@ ${evidenceList.map((e) => `- ${e.title} [${e.status?.toUpperCase()}] (Verifier: 
               {messageSent ? (
                 <div className="text-center py-6 space-y-3">
                   <CheckCircle2 className="w-12 h-12 text-emerald-600 mx-auto" />
-                  <h4 className="text-lg font-black">Message Dispatched!</h4>
-                  <p className="text-xs font-bold text-slate-700">Your inquiry has been delivered directly to {profile.full_name}'s inbox.</p>
+                  <h4 className="text-lg font-black">Message Sent!</h4>
+                  <p className="text-xs font-bold text-slate-700">Your message has been delivered directly to {profile.full_name}.</p>
                 </div>
               ) : (
                 <form onSubmit={handleSendMessage} className="space-y-3.5">

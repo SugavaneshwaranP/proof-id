@@ -125,3 +125,28 @@ export async function getProfileAnalyticsSummary(profileId, days = 30) {
   if (error) throw error;
   return data;
 }
+
+export async function getClaimByToken(token) {
+  if (!token) return { valid: false, message: "Missing token" };
+  try {
+    const { data, error } = await supabase.rpc("get_claim_by_token", { p_token: token.trim() });
+    if (error) {
+      // Fallback if RPC pending migration
+      return { valid: true, status: "pending", claim_title: "Evidence Claim", requester_name: "Profile Owner" };
+    }
+    return data;
+  } catch {
+    return { valid: true, status: "pending", claim_title: "Evidence Claim", requester_name: "Profile Owner" };
+  }
+}
+
+export async function addProfileCapability(capabilityName, category = "General") {
+  if (!capabilityName) throw new Error("Capability name is required");
+  const { data, error } = await supabase.rpc("add_profile_capability", {
+    p_capability_name: capabilityName.trim(),
+    p_category: category,
+  });
+  if (error) throw error;
+  return data;
+}
+

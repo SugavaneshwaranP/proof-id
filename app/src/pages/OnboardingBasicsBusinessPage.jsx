@@ -6,11 +6,11 @@ import { getOnboardingDraft, saveOnboardingDraft } from '../lib/onboardingDraft'
 
 export default function OnboardingBasicsBusinessPage({ setActivePage, onSaveBusinessBasics }) {
   const [draft, setDraft] = useState(() => getOnboardingDraft());
-  const [businessName, setBusinessName] = useState(() => draft.businessName || 'Apex Precision Dynamics LLC');
-  const [contactMethod, setContactMethod] = useState(() => draft.contactMethod || 'procurement@apex-dynamics.com');
-  const [whatYouDo, setWhatYouDo] = useState(() => draft.whatYouDo || 'Contract manufacturer specializing in sub-micron tolerance CNC milling');
-  const [location, setLocation] = useState(() => draft.location || 'Austin, TX');
-  const [operatingRegions, setOperatingRegions] = useState(() => draft.operatingRegions || 'North America, EU, Japan');
+  const [businessName, setBusinessName] = useState(() => draft.businessName || '');
+  const [contactMethod, setContactMethod] = useState(() => draft.contactMethod || '');
+  const [whatYouDo, setWhatYouDo] = useState(() => draft.whatYouDo || '');
+  const [location, setLocation] = useState(() => draft.location || '');
+  const [operatingRegions, setOperatingRegions] = useState(() => draft.operatingRegions || '');
   const [logoPreview, setLogoPreview] = useState(() => draft.logoPreview || '🏢');
 
   useEffect(() => {
@@ -73,7 +73,7 @@ export default function OnboardingBasicsBusinessPage({ setActivePage, onSaveBusi
         {/* Top Metallic Clip */}
         <div className="dossier-clip">
           <Paperclip className="w-3.5 h-3.5 text-amber-300" />
-          <span>BUSINESS FILE DOSSIER</span>
+          <span>STEP 3 OF 6: YOUR BUSINESS</span>
         </div>
 
         {/* Header */}

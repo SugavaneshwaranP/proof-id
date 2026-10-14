@@ -94,4 +94,69 @@ export const inboxRepository = {
 
     return data;
   },
+
+  /**
+   * Submit formal B2B quote response for an inquiry/RFQ
+   */
+  async createQuoteResponse({
+    contactRequestId,
+    supplierProfileId,
+    unitPrice,
+    currency = "USD",
+    moq = 1,
+    leadTimeDays = 7,
+    paymentTerms = "Net 30",
+    validUntil = null,
+    quoteNotes = "",
+  }) {
+    if (!contactRequestId || !supplierProfileId || !unitPrice) {
+      throw new Error("contactRequestId, supplierProfileId, and unitPrice are required");
+    }
+
+    const payload = {
+      contact_request_id: contactRequestId,
+      supplier_profile_id: supplierProfileId,
+      unit_price: Number(unitPrice),
+      currency,
+      moq: Number(moq) || 1,
+      lead_time_days: Number(leadTimeDays) || 7,
+      payment_terms: paymentTerms,
+      valid_until: validUntil || new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0],
+      quote_notes: quoteNotes,
+      created_at: new Date().toISOString(),
+    };
+
+    const { data, error } = await supabase
+      .from("quote_responses")
+      .insert(payload)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("[inboxRepository] Create quote response error:", error);
+      throw error;
+    }
+
+    return data;
+  },
+
+  /**
+   * Fetch quote responses for a contact request
+   */
+  async getQuoteResponses(contactRequestId) {
+    if (!contactRequestId) return [];
+
+    const { data, error } = await supabase
+      .from("quote_responses")
+      .select("*")
+      .eq("contact_request_id", contactRequestId)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.warn("[inboxRepository] getQuoteResponses error:", error);
+      return [];
+    }
+
+    return data || [];
+  },
 };

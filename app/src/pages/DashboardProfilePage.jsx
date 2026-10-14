@@ -10,7 +10,7 @@ import { getPreScaledImageUrl } from '../lib/imageUtils';
 
 export default function DashboardProfilePage({ setActivePage, onSaveProfile }) {
   const currentUser = authService.getCurrentUser();
-  const slug = currentUser?.slug || 'alexrivera';
+  const slug = currentUser?.slug || 'profile';
   
   const [profile, setProfile] = useState(() => dbStore.getProfile(slug));
   const [name, setName] = useState(profile.full_name || '');
@@ -32,30 +32,38 @@ export default function DashboardProfilePage({ setActivePage, onSaveProfile }) {
     setAvatarUrl(fresh.avatar_url || '/avatar_hero.png');
   }, [slug]);
 
-  // Criterion 2: Missing optional data never blocks form submission or page navigation
-  const handleSave = (e) => {
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSave = async (e) => {
     if (e) e.preventDefault();
     if (!name.trim()) return;
 
-    const updated = dbStore.updateProfile(slug, {
-      full_name: name.trim(),
-      headline: headline.trim(),
-      location: location.trim(),
-      bio: bio.trim(),
-      availability_status: availability,
-      avatar_url: avatarUrl,
-    });
+    setIsSaving(true);
+    try {
+      const updated = await dbStore.updateProfile(slug, {
+        full_name: name.trim(),
+        headline: headline.trim(),
+        location: location.trim(),
+        bio: bio.trim(),
+        availability_status: availability,
+        avatar_url: avatarUrl,
+      });
 
-    authService.updateProfile({
-      fullName: name.trim(),
-    });
+      authService.updateProfile({
+        fullName: name.trim(),
+      });
 
-    if (onSaveProfile) onSaveProfile(updated);
+      if (onSaveProfile) onSaveProfile(updated);
 
-    setShowToast(true);
-    setTimeout(() => {
-      setShowToast(false);
-    }, 2500);
+      setShowToast(true);
+      setTimeout(() => {
+        setShowToast(false);
+      }, 2500);
+    } catch (err) {
+      console.warn("Profile update failed or queued:", err);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleCycleAvatar = () => {
@@ -84,17 +92,17 @@ export default function DashboardProfilePage({ setActivePage, onSaveProfile }) {
             <div className="w-5 h-5 rounded-full bg-slate-900 text-emerald-300 flex items-center justify-center">
               <Check className="w-3.5 h-3.5" />
             </div>
-            <span>Profile Synchronized Live!</span>
+            <span>Profile Saved!</span>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Main Tactile Dossier Container (Criterion 5: Fully Usable on Mobile <375px) */}
+      {/* Main Container */}
       <div className="dossier-card rounded-3xl p-4 sm:p-8 md:p-10 border-3 border-slate-900 shadow-[6px_6px_0px_0px_#0f172a] sm:shadow-[8px_8px_0px_0px_#0f172a] relative overflow-hidden bg-[#ffedd5] text-slate-900">
         {/* Top Metallic Clip */}
         <div className="dossier-clip">
           <Paperclip className="w-3.5 h-3.5 text-amber-300" />
-          <span>PROFILE EDITOR DOSSIER</span>
+          <span>PROFILE SETTINGS</span>
         </div>
 
         {/* Headline & Subhead */}
@@ -103,10 +111,10 @@ export default function DashboardProfilePage({ setActivePage, onSaveProfile }) {
             Live Page Settings • backed.network/{slug}
           </span>
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight pt-1">
-            “Edit Profile Details”
+            Edit Your Profile
           </h1>
           <p className="text-xs font-extrabold text-slate-800">
-            Changes update instantly on your public page. Missing optional fields never blocks saving.
+            Changes update instantly on your public page.
           </p>
         </div>
 
@@ -132,14 +140,14 @@ export default function DashboardProfilePage({ setActivePage, onSaveProfile }) {
               </div>
             </div>
             <div className="space-y-1 text-center sm:text-left flex-1 min-w-0">
-              <p className="text-xs font-mono font-black uppercase text-slate-900">PROFILE AVATAR</p>
-              <p className="text-[11px] font-bold text-slate-600">Pre-scaled responsive web asset for rapid mobile loading (&lt;1.5s)</p>
+              <p className="text-xs font-mono font-black uppercase text-slate-900">PROFILE PHOTO</p>
+              <p className="text-[11px] font-bold text-slate-600">Your public profile picture</p>
               <button
                 type="button"
                 onClick={handleCycleAvatar}
                 className="text-[11px] font-mono font-black text-slate-900 bg-amber-200 hover:bg-amber-300 px-2.5 py-1 rounded-lg border border-slate-900 inline-block transition-all cursor-pointer mt-1"
               >
-                Change Avatar
+                Change Photo
               </button>
             </div>
           </div>
@@ -162,7 +170,7 @@ export default function DashboardProfilePage({ setActivePage, onSaveProfile }) {
             />
           </div>
 
-          {/* Headline (Optional - Criterion 2: Missing optional data never blocks form submission) */}
+          {/* Headline */}
           <div className="space-y-1">
             <div className="flex items-center justify-between">
               <label className="text-xs font-mono font-black uppercase flex items-center gap-1.5">
@@ -175,12 +183,12 @@ export default function DashboardProfilePage({ setActivePage, onSaveProfile }) {
               type="text"
               value={headline}
               onChange={(e) => setHeadline(e.target.value)}
-              placeholder="e.g. Staff Product Engineer & Frontend Architect"
+              placeholder="e.g. Full-Stack Developer & Designer"
               className="w-full bg-white border-2 border-slate-900 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-400 shadow-[2px_2px_0px_0px_#0f172a] min-h-[44px]"
             />
           </div>
 
-          {/* Location (Optional) */}
+          {/* Location */}
           <div className="space-y-1">
             <div className="flex items-center justify-between">
               <label className="text-xs font-mono font-black uppercase flex items-center gap-1.5">
@@ -213,12 +221,12 @@ export default function DashboardProfilePage({ setActivePage, onSaveProfile }) {
             </select>
           </div>
 
-          {/* Bio (Optional - Criterion 2) */}
+          {/* Bio */}
           <div className="space-y-1">
             <div className="flex items-center justify-between">
               <label className="text-xs font-mono font-black uppercase flex items-center gap-1.5">
                 <FileText className="w-3.5 h-3.5 text-slate-800" />
-                Verified Bio
+                About You
               </label>
               <span className="text-[10px] font-mono text-slate-500 font-bold uppercase">(Optional)</span>
             </div>
@@ -226,7 +234,7 @@ export default function DashboardProfilePage({ setActivePage, onSaveProfile }) {
               rows={4}
               value={bio}
               onChange={(e) => setBio(e.target.value)}
-              placeholder="Add your background or leave blank..."
+              placeholder="Add a short bio about yourself..."
               className="w-full bg-white border-2 border-slate-900 rounded-xl p-3 text-xs sm:text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-400 shadow-[2px_2px_0px_0px_#0f172a] resize-none"
             />
           </div>
@@ -234,10 +242,11 @@ export default function DashboardProfilePage({ setActivePage, onSaveProfile }) {
           {/* Save Button */}
           <button
             type="submit"
-            className="w-full py-3.5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-black text-xs sm:text-sm uppercase tracking-wider shadow-[4px_4px_0px_0px_#ca8a04] border-2 border-slate-900 transition-all cursor-pointer flex items-center justify-center gap-2 min-h-[48px]"
+            disabled={isSaving}
+            className="w-full py-3.5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-black text-xs sm:text-sm uppercase tracking-wider shadow-[4px_4px_0px_0px_#ca8a04] border-2 border-slate-900 transition-all cursor-pointer flex items-center justify-center gap-2 min-h-[48px] disabled:opacity-50"
           >
             <Save className="w-4 h-4 text-amber-300" />
-            <span>Save Profile Updates</span>
+            <span>{isSaving ? 'Saving profile...' : 'Save Profile Updates'}</span>
           </button>
         </form>
       </div>

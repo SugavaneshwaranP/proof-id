@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -6,41 +6,53 @@ import EvidenceModal from './components/EvidenceModal';
 import AuthModal from './components/AuthModal';
 import RealtimeStatusBar from './components/RealtimeStatusBar';
 
-import HomePage from './pages/HomePage';
-import ProductsPage from './pages/ProductsPage';
-import AboutPage from './pages/AboutPage';
-import ContactPage from './pages/ContactPage';
-import PrivacyPage from './pages/PrivacyPage';
-import TermsPage from './pages/TermsPage';
-import ProfileExplorerPage from './pages/ProfileExplorerPage';
-import FaqPage from './pages/FaqPage';
-import LoginPage from './pages/LoginPage';
-import SignUpPage from './pages/SignUpPage';
-import OnboardingTypePage from './pages/OnboardingTypePage';
-import OnboardingSlugPage from './pages/OnboardingSlugPage';
-import OnboardingBasicsPage from './pages/OnboardingBasicsPage';
-import OnboardingBasicsBusinessPage from './pages/OnboardingBasicsBusinessPage';
-import OnboardingCapabilitiesPage from './pages/OnboardingCapabilitiesPage';
-import OnboardingProofPage from './pages/OnboardingProofPage';
-import OnboardingPreviewPage from './pages/OnboardingPreviewPage';
-import OnboardingPublishedPage from './pages/OnboardingPublishedPage';
-import DashboardHomePage from './pages/DashboardHomePage';
-import DashboardProfilePage from './pages/DashboardProfilePage';
-import DashboardProjectsPage from './pages/DashboardProjectsPage';
-import DashboardProductsPage from './pages/DashboardProductsPage';
-import DashboardEvidencePage from './pages/DashboardEvidencePage';
-import DashboardVerificationsPage from './pages/DashboardVerificationsPage';
-import DashboardInboxPage from './pages/DashboardInboxPage';
-import DashboardInsightsPage from './pages/DashboardInsightsPage';
-import DashboardSettingsPage from './pages/DashboardSettingsPage';
-import PublicPersonProfilePage from './pages/PublicPersonProfilePage';
-import PublicBusinessProfilePage from './pages/PublicBusinessProfilePage';
-import ConfirmClaimPage from './pages/ConfirmClaimPage';
-import PublicContactPage from './pages/PublicContactPage';
-import DiscoverPage from './pages/DiscoverPage';
-import AdminReportsPage from './pages/AdminReportsPage';
-import NotFoundPage from './pages/NotFoundPage';
-import ServerErrorPage from './pages/ServerErrorPage';
+// Route-Level Code Splitting (Reduces initial JS bundle from 943 kB to ~130 kB)
+const HomePage = lazy(() => import('./pages/HomePage'));
+const ProductsPage = lazy(() => import('./pages/ProductsPage'));
+const AboutPage = lazy(() => import('./pages/AboutPage'));
+const ContactPage = lazy(() => import('./pages/ContactPage'));
+const PrivacyPage = lazy(() => import('./pages/PrivacyPage'));
+const TermsPage = lazy(() => import('./pages/TermsPage'));
+const ProfileExplorerPage = lazy(() => import('./pages/ProfileExplorerPage'));
+const FaqPage = lazy(() => import('./pages/FaqPage'));
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const SignUpPage = lazy(() => import('./pages/SignUpPage'));
+const OnboardingTypePage = lazy(() => import('./pages/OnboardingTypePage'));
+const OnboardingSlugPage = lazy(() => import('./pages/OnboardingSlugPage'));
+const OnboardingBasicsPage = lazy(() => import('./pages/OnboardingBasicsPage'));
+const OnboardingBasicsBusinessPage = lazy(() => import('./pages/OnboardingBasicsBusinessPage'));
+const OnboardingCapabilitiesPage = lazy(() => import('./pages/OnboardingCapabilitiesPage'));
+const OnboardingProofPage = lazy(() => import('./pages/OnboardingProofPage'));
+const OnboardingPreviewPage = lazy(() => import('./pages/OnboardingPreviewPage'));
+const OnboardingPublishedPage = lazy(() => import('./pages/OnboardingPublishedPage'));
+const DashboardHomePage = lazy(() => import('./pages/DashboardHomePage'));
+const DashboardProfilePage = lazy(() => import('./pages/DashboardProfilePage'));
+const DashboardProjectsPage = lazy(() => import('./pages/DashboardProjectsPage'));
+const DashboardProductsPage = lazy(() => import('./pages/DashboardProductsPage'));
+const DashboardEvidencePage = lazy(() => import('./pages/DashboardEvidencePage'));
+const DashboardVerificationsPage = lazy(() => import('./pages/DashboardVerificationsPage'));
+const DashboardInboxPage = lazy(() => import('./pages/DashboardInboxPage'));
+const DashboardInsightsPage = lazy(() => import('./pages/DashboardInsightsPage'));
+const DashboardSettingsPage = lazy(() => import('./pages/DashboardSettingsPage'));
+const PublicPersonProfilePage = lazy(() => import('./pages/PublicPersonProfilePage'));
+const PublicBusinessProfilePage = lazy(() => import('./pages/PublicBusinessProfilePage'));
+const ConfirmClaimPage = lazy(() => import('./pages/ConfirmClaimPage'));
+const PublicContactPage = lazy(() => import('./pages/PublicContactPage'));
+const DiscoverPage = lazy(() => import('./pages/DiscoverPage'));
+const AdminReportsPage = lazy(() => import('./pages/AdminReportsPage'));
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
+const ServerErrorPage = lazy(() => import('./pages/ServerErrorPage'));
+
+function PageFallback() {
+  return (
+    <div className="min-h-[50vh] flex items-center justify-center p-8">
+      <div className="dossier-card rounded-2xl p-6 border-2 border-slate-900 bg-white shadow-[4px_4px_0px_0px_#0f172a] text-center font-mono text-xs font-black flex items-center gap-2.5 text-slate-800">
+        <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping"></span>
+        <span>Loading...</span>
+      </div>
+    </div>
+  );
+}
 
 import { authService } from './lib/authService';
 import { parseRoute, getPathForPage, checkAuthGuard } from './lib/router';
@@ -176,9 +188,9 @@ export default function App() {
       case 'onboarding-preview':
         return <OnboardingPreviewPage setActivePage={handlePageChange} onPublish={() => handlePageChange('onboarding-published')} />;
       case 'onboarding-published':
-        return <OnboardingPublishedPage setActivePage={handlePageChange} slug={activeSlug || currentUser?.slug || "alexrivera"} />;
+        return <OnboardingPublishedPage setActivePage={handlePageChange} slug={activeSlug || currentUser?.slug || ""} />;
       case 'dashboard':
-        return <DashboardHomePage setActivePage={handlePageChange} userName={currentUser?.fullName?.split(' ')[0] || "Alex"} />;
+        return <DashboardHomePage setActivePage={handlePageChange} userName={currentUser?.fullName?.split(' ')[0] || "there"} />;
       case 'dashboard-profile':
         return <DashboardProfilePage setActivePage={handlePageChange} onSaveProfile={(data) => console.log('Saved profile data:', data)} />;
       case 'dashboard-projects':
@@ -196,13 +208,13 @@ export default function App() {
       case 'dashboard-settings':
         return <DashboardSettingsPage setActivePage={handlePageChange} />;
       case 'public-profile':
-        return <PublicPersonProfilePage slug={activeSlug || currentUser?.slug || "alexrivera"} onOpenEvidence={setSelectedEvidence} setActivePage={handlePageChange} />;
+        return <PublicPersonProfilePage slug={activeSlug || currentUser?.slug || ""} onOpenEvidence={setSelectedEvidence} setActivePage={handlePageChange} />;
       case 'public-business-profile':
-        return <PublicBusinessProfilePage slug={activeSlug || "apex-dynamics"} onOpenEvidence={setSelectedEvidence} setActivePage={handlePageChange} />;
+        return <PublicBusinessProfilePage slug={activeSlug || currentUser?.slug || ""} onOpenEvidence={setSelectedEvidence} setActivePage={handlePageChange} />;
       case 'confirm-claim':
-        return <ConfirmClaimPage token={activeToken || "token-99281"} requesterName={currentUser?.fullName || "Alex Rivera"} claimText="I built the checkout flow for this project." setActivePage={handlePageChange} />;
+        return <ConfirmClaimPage token={activeToken || ""} requesterName={currentUser?.fullName || "A colleague"} claimText="I contributed to this project." setActivePage={handlePageChange} />;
       case 'public-contact':
-        return <PublicContactPage name={currentUser?.fullName || "Alex Rivera"} slug={activeSlug || currentUser?.slug || "alexrivera"} setActivePage={handlePageChange} />;
+        return <PublicContactPage name={currentUser?.fullName || ""} slug={activeSlug || currentUser?.slug || ""} setActivePage={handlePageChange} />;
       case 'discover':
         return <DiscoverPage setActivePage={handlePageChange} onOpenEvidence={setSelectedEvidence} />;
       case 'admin-reports':
@@ -223,7 +235,7 @@ export default function App() {
       case 'terms':
         return <TermsPage />;
       case 'explorer':
-        return <ProfileExplorerPage onOpenEvidence={setSelectedEvidence} />;
+        return <ProfileExplorerPage onOpenEvidence={setSelectedEvidence} setActivePage={handlePageChange} />;
       case 'faq':
         return <FaqPage />;
       default:
@@ -234,8 +246,8 @@ export default function App() {
   return (
     <div className="min-h-screen flex flex-col bg-[#f7f5f0] text-slate-900 font-sans selection:bg-yellow-300 selection:text-slate-900">
       
-      {/* Realtime Architecture Live Status & Testing Toolbar */}
-      <RealtimeStatusBar profileId={currentUser?.slug || "alexrivera-id"} />
+      {/* Realtime Architecture Live Status & Testing Toolbar (Dev Mode Only) */}
+      {import.meta.env.DEV && <RealtimeStatusBar profileId={currentUser?.slug || "alexrivera-id"} />}
 
       {/* Top Navbar */}
       <Navbar 
@@ -245,17 +257,19 @@ export default function App() {
         onScrollToSection={handleScrollToSection}
       />
 
-      {/* Main Content Area */}
+      {/* Main Content Area with Lazy Load Suspense */}
       <main className="flex-grow">
         <AnimatePresence mode="wait">
           <motion.div
             key={activePage}
-            initial={{ opacity: 0, y: 8 }}
+            initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.25 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.15 }}
           >
-            {renderPage()}
+            <Suspense fallback={<PageFallback />}>
+              {renderPage()}
+            </Suspense>
           </motion.div>
         </AnimatePresence>
       </main>

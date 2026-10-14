@@ -11,7 +11,7 @@ export default function NotFoundPage({ setActivePage }) {
         {/* Top Metallic Clip */}
         <div className="dossier-clip">
           <Paperclip className="w-3.5 h-3.5 text-amber-300" />
-          <span>404 ERROR DOSSIER</span>
+          <span>PAGE NOT FOUND</span>
         </div>
 
         {/* Illustration Badge */}

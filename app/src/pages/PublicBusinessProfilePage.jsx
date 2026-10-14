@@ -50,7 +50,8 @@ export default function PublicBusinessProfilePage({ slug = 'apex-dynamics', onOp
     };
   }, [profile?.business_name, profile?.full_name, slug]);
 
-  const fullUrl = `https://backed.network/${slug}`;
+  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://backed.network';
+  const fullUrl = `${origin}/business/${slug}`;
 
   // Criterion 7: Login-Free Shareability - Copy URL
   const handleCopyLink = () => {
@@ -192,13 +193,12 @@ ${evidenceList.map((e) => `- ${e.title} [${e.status?.toUpperCase()}] (Auditor: $
         {/* Top Metallic Clip */}
         <div className="dossier-clip">
           <Paperclip className="w-3.5 h-3.5 text-amber-300" />
-          <span>B2B VENDOR SPECIFICATION DOSSIER</span>
+          <span>VERIFIED BUSINESS PROFILE</span>
         </div>
 
-        {/* Business Header & CRITERION 4: FOCUSED PRIMARY CALL-TO-ACTION */}
+        {/* Business Header & Primary CTA */}
         <div className="flex flex-col sm:flex-row items-start justify-between gap-5 sm:gap-6 pt-2">
           <div className="flex items-start gap-4">
-            {/* Pre-scaled web avatar (Criterion 6) */}
             <div className="w-18 h-18 sm:w-22 sm:h-22 rounded-2xl border-3 border-slate-900 overflow-hidden bg-white shadow-[4px_4px_0px_0px_#0f172a] shrink-0">
               <img 
                 src={getPreScaledImageUrl(profile.avatar_url, 200, 200)} 
@@ -224,7 +224,7 @@ ${evidenceList.map((e) => `- ${e.title} [${e.status?.toUpperCase()}] (Auditor: $
             </div>
           </div>
 
-          {/* CRITERION 4: EXACTLY ONE PROMINENT PRIMARY CALL-TO-ACTION */}
+          {/* Primary Action Button */}
           <div className="w-full sm:w-auto shrink-0 pt-2 sm:pt-0 no-print">
             <button
               id="primary-business-cta"
@@ -235,7 +235,7 @@ ${evidenceList.map((e) => `- ${e.title} [${e.status?.toUpperCase()}] (Auditor: $
               className="w-full sm:w-auto px-6 py-4 rounded-2xl bg-slate-900 text-white font-black text-xs sm:text-sm uppercase tracking-wider shadow-[4px_4px_0px_0px_#059669] border-2 border-slate-900 hover:bg-slate-800 cursor-pointer flex items-center justify-center gap-2 min-h-[48px]"
             >
               <Send className="w-4 h-4 text-emerald-300" />
-              <span>Request Business Quote</span>
+              <span>Request a Quote</span>
             </button>
           </div>
         </div>
@@ -243,7 +243,7 @@ ${evidenceList.map((e) => `- ${e.title} [${e.status?.toUpperCase()}] (Auditor: $
         {/* Overview & Bio */}
         <div className="bg-white p-4 sm:p-5 rounded-2xl border-2 border-slate-900 shadow-[3px_3px_0px_0px_#0f172a] space-y-2">
           <span className="text-[10px] font-mono font-black text-slate-500 uppercase">
-            COMPANY DESCRIPTION & FACILITY OVERVIEW
+            ABOUT THIS COMPANY
           </span>
           <p className="text-xs sm:text-sm font-bold text-slate-900 leading-relaxed">{profile.bio}</p>
           {profile.facility_description && (
@@ -257,7 +257,7 @@ ${evidenceList.map((e) => `- ${e.title} [${e.status?.toUpperCase()}] (Auditor: $
         <div className="space-y-4 pt-2">
           <h3 className="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">
             <Package className="w-5 h-5 text-emerald-800" />
-            <span>Verified Product Catalog & Capacities ({productsList.length})</span>
+            <span>Products & Services ({productsList.length})</span>
           </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4">
@@ -275,7 +275,6 @@ ${evidenceList.map((e) => `- ${e.title} [${e.status?.toUpperCase()}] (Auditor: $
 
                 <div className="flex items-center justify-between pt-2 border-t border-slate-200">
                   <span className="text-xs font-mono font-black text-slate-900">{prod.price_range}</span>
-                  {/* Secondary Product Button */}
                   <button
                     onClick={() => {
                       setSelectedProduct(prod);
@@ -296,7 +295,7 @@ ${evidenceList.map((e) => `- ${e.title} [${e.status?.toUpperCase()}] (Auditor: $
           <div className="space-y-3 pt-3 border-t-2 border-slate-900/20">
             <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-emerald-800" />
-              <span>Certificates & Compliance Audits ({evidenceList.length})</span>
+              <span>Certificates & Quality Audits ({evidenceList.length})</span>
             </h3>
 
             <div className="space-y-2">
@@ -312,7 +311,7 @@ ${evidenceList.map((e) => `- ${e.title} [${e.status?.toUpperCase()}] (Auditor: $
                     <p className="text-[10px] font-mono text-slate-600">Auditor: {ev.verifier_name}</p>
                   </div>
                   <span className="text-xs font-mono font-black text-emerald-800 underline ml-2 shrink-0">
-                    Inspect Proof →
+                    View Certificate →
                   </span>
                 </div>
               ))}
@@ -332,11 +331,11 @@ ${evidenceList.map((e) => `- ${e.title} [${e.status?.toUpperCase()}] (Auditor: $
           className="w-full py-3.5 rounded-2xl bg-slate-900 text-white font-black text-xs uppercase tracking-wider shadow-[4px_4px_0px_0px_#059669] border-2 border-slate-900 flex items-center justify-center gap-2 cursor-pointer min-h-[48px]"
         >
           <Send className="w-4 h-4 text-emerald-300" />
-          <span>Request Business Quote</span>
+          <span>Request a Quote</span>
         </button>
       </div>
 
-      {/* QUOTE RFP MODAL (Criterion 5: Fully Usable on Mobile <375px) */}
+      {/* QUOTE MODAL */}
       <AnimatePresence>
         {showQuoteModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/80 backdrop-blur-md overflow-y-auto">
@@ -349,7 +348,7 @@ ${evidenceList.map((e) => `- ${e.title} [${e.status?.toUpperCase()}] (Auditor: $
               <div className="flex items-center justify-between pb-3 border-b-2 border-slate-900">
                 <h3 className="text-base font-black flex items-center gap-2 truncate">
                   <Building2 className="w-5 h-5 text-emerald-600 shrink-0" />
-                  <span className="truncate">RFP Quote: {profile.business_name || profile.full_name}</span>
+                  <span className="truncate">Request a Quote: {profile.business_name || profile.full_name}</span>
                 </h3>
                 <button 
                   onClick={() => setShowQuoteModal(false)} 
@@ -362,17 +361,17 @@ ${evidenceList.map((e) => `- ${e.title} [${e.status?.toUpperCase()}] (Auditor: $
               {quoteSent ? (
                 <div className="text-center py-6 space-y-3">
                   <CheckCircle2 className="w-12 h-12 text-emerald-600 mx-auto" />
-                  <h4 className="text-lg font-black">RFP Dispatched!</h4>
-                  <p className="text-xs font-bold text-slate-700">The engineering & sales team will respond directly to your business email.</p>
+                  <h4 className="text-lg font-black">Quote Request Sent!</h4>
+                  <p className="text-xs font-bold text-slate-700">The team will respond directly to your email.</p>
                 </div>
               ) : (
                 <form onSubmit={handleSendQuote} className="space-y-3.5">
                   <div>
-                    <label className="text-xs font-mono font-black uppercase block mb-1">Your Business Email *</label>
+                    <label className="text-xs font-mono font-black uppercase block mb-1">Your Email Address *</label>
                     <input
                       type="email"
                       required
-                      placeholder="procurement@company.com"
+                      placeholder="e.g. contact@yourcompany.com"
                       value={buyerEmail}
                       onChange={(e) => setBuyerEmail(e.target.value)}
                       className="w-full bg-white border-2 border-slate-900 rounded-xl px-3.5 py-2.5 text-xs font-bold focus:outline-none min-h-[44px]"
@@ -443,11 +442,11 @@ ${evidenceList.map((e) => `- ${e.title} [${e.status?.toUpperCase()}] (Auditor: $
                   </div>
 
                   <div>
-                    <label className="text-xs font-mono font-black uppercase block mb-1">RFP Specifications & Notes</label>
+                    <label className="text-xs font-mono font-black uppercase block mb-1">Project Details & Notes</label>
                     <textarea
                       rows={4}
                       required
-                      placeholder="Attach CAD drawing links, tolerances, or delivery deadlines..."
+                      placeholder="Describe your requirements, quantity needed, or timeline..."
                       value={quoteNotes}
                       onChange={(e) => setQuoteNotes(e.target.value)}
                       className="w-full bg-white border-2 border-slate-900 rounded-xl p-3 text-xs font-bold focus:outline-none resize-none"
@@ -459,7 +458,7 @@ ${evidenceList.map((e) => `- ${e.title} [${e.status?.toUpperCase()}] (Auditor: $
                     className="w-full py-3.5 rounded-xl bg-slate-900 text-white font-black text-xs uppercase tracking-wider shadow-[4px_4px_0px_0px_#059669] border-2 border-slate-900 hover:bg-slate-800 flex items-center justify-center gap-2 cursor-pointer min-h-[44px]"
                   >
                     <Send className="w-4 h-4 text-emerald-300" />
-                    <span>Submit RFP Quote Request</span>
+                    <span>Send Quote Request</span>
                   </button>
                 </form>
               )}

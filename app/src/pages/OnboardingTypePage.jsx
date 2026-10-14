@@ -49,7 +49,7 @@ export default function OnboardingTypePage({ setActivePage, onSelectType }) {
         {/* Top Metallic Clip */}
         <div className="dossier-clip">
           <Paperclip className="w-3.5 h-3.5 text-amber-300" />
-          <span>ONBOARDING DOSSIER</span>
+          <span>STEP 1 OF 6: ACCOUNT TYPE</span>
         </div>
 
         {/* Header */}

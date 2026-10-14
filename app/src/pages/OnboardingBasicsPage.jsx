@@ -6,11 +6,11 @@ import { getOnboardingDraft, saveOnboardingDraft } from '../lib/onboardingDraft'
 
 export default function OnboardingBasicsPage({ setActivePage, onSaveBasics }) {
   const [draft, setDraft] = useState(() => getOnboardingDraft());
-  const [name, setName] = useState(() => draft.fullName || 'Alex Rivera');
-  const [contactMethod, setContactMethod] = useState(() => draft.contactMethod || 'alex@backed.network');
-  const [headline, setHeadline] = useState(() => draft.headline || 'Backend developer who ships fast');
-  const [location, setLocation] = useState(() => draft.location || 'San Francisco, CA');
-  const [bio, setBio] = useState(() => draft.bio || 'Building resilient microservices, distributed ledger verifications, and high-performance Rust web backends.');
+  const [name, setName] = useState(() => draft.fullName || '');
+  const [contactMethod, setContactMethod] = useState(() => draft.contactMethod || '');
+  const [headline, setHeadline] = useState(() => draft.headline || '');
+  const [location, setLocation] = useState(() => draft.location || '');
+  const [bio, setBio] = useState(() => draft.bio || '');
   const [photoUrl, setPhotoUrl] = useState(() => draft.photoUrl || '/avatar_hero.png');
 
   useEffect(() => {
@@ -79,7 +79,7 @@ export default function OnboardingBasicsPage({ setActivePage, onSaveBasics }) {
         {/* Top Metallic Clip */}
         <div className="dossier-clip">
           <Paperclip className="w-3.5 h-3.5 text-amber-300" />
-          <span>PROFILE BASICS DOSSIER</span>
+          <span>STEP 3 OF 6: ABOUT YOU</span>
         </div>
 
         {/* Header */}
@@ -91,7 +91,7 @@ export default function OnboardingBasicsPage({ setActivePage, onSaveBasics }) {
             “Tell us a bit about you”
           </h1>
           <p className="text-xs sm:text-sm font-extrabold text-slate-800">
-            Only your name is required. All other fields are optional and never block your progress.
+            Only your name is required. All other fields are optional and can be updated anytime.
           </p>
         </div>
 
@@ -133,14 +133,14 @@ export default function OnboardingBasicsPage({ setActivePage, onSaveBasics }) {
             </div>
           </div>
 
-          {/* Your Name (Required for Minimum Credible Publishing) */}
+          {/* Your Name */}
           <div className="space-y-1">
             <label className="text-xs font-mono font-black text-slate-900 uppercase tracking-wider flex items-center justify-between">
               <span className="flex items-center gap-1.5">
                 <User className="w-4 h-4 text-slate-800" />
                 Your name *
               </span>
-              <span className="text-[10px] font-mono text-emerald-800 font-black">MINIMUM CREDIBLE REQUIREMENT</span>
+              <span className="text-[10px] font-mono text-emerald-800 font-black">REQUIRED</span>
             </label>
             <input
               type="text"
@@ -150,19 +150,19 @@ export default function OnboardingBasicsPage({ setActivePage, onSaveBasics }) {
                 setName(e.target.value);
                 persistCurrentDraft({ fullName: e.target.value });
               }}
-              placeholder="Full name"
+              placeholder="e.g. Sarah Jenkins"
               className="w-full bg-white border-2 border-slate-900 rounded-xl px-3.5 py-3 text-sm text-slate-900 font-bold placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-400 shadow-[3px_3px_0px_0px_#0f172a]"
             />
           </div>
 
-          {/* Contact Method (Required for Minimum Credible Publishing) */}
+          {/* Contact Method */}
           <div className="space-y-1">
             <label className="text-xs font-mono font-black text-slate-900 uppercase tracking-wider flex items-center justify-between">
               <span className="flex items-center gap-1.5">
                 <Mail className="w-4 h-4 text-slate-800" />
-                Contact Method *
+                Contact Email or Phone *
               </span>
-              <span className="text-[10px] font-mono text-emerald-800 font-black">MINIMUM CREDIBLE REQUIREMENT</span>
+              <span className="text-[10px] font-mono text-emerald-800 font-black">REQUIRED</span>
             </label>
             <input
               type="text"
@@ -172,11 +172,11 @@ export default function OnboardingBasicsPage({ setActivePage, onSaveBasics }) {
                 setContactMethod(e.target.value);
                 persistCurrentDraft({ contactMethod: e.target.value });
               }}
-              placeholder="e.g. alex@example.com or @alexrivera"
+              placeholder="e.g. sarah@example.com"
               className="w-full bg-white border-2 border-slate-900 rounded-xl px-3.5 py-3 text-sm text-slate-900 font-bold placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-400 shadow-[3px_3px_0px_0px_#0f172a]"
             />
             <p className="text-[11px] font-mono font-bold text-slate-600">
-              Allows viewers to reach you via the focused CTA without dead ends.
+              How visitors and clients can reach you directly.
             </p>
           </div>
 

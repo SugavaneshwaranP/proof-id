@@ -9,9 +9,7 @@ export default function OnboardingCapabilitiesPage({ setActivePage, onSaveCapabi
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedChips, setSelectedChips] = useState(() => {
     const d = getOnboardingDraft();
-    return d.capabilities && d.capabilities.length > 0
-      ? d.capabilities
-      : ['Backend Systems', 'Rust Architecture', 'API Verification'];
+    return d.capabilities && d.capabilities.length > 0 ? d.capabilities : [];
   });
 
   useEffect(() => {
@@ -41,14 +39,14 @@ export default function OnboardingCapabilitiesPage({ setActivePage, onSaveCapabi
     'Rapid Prototyping',
     'Cleanroom Assembly'
   ] : [
-    'Backend Systems',
-    'Rust Architecture',
-    'API Verification',
-    'React & Next.js',
-    'Distributed Systems',
-    'DevOps & Kubernetes',
-    'UI/UX Architecture',
-    'Security Engineering'
+    'Web Development',
+    'Graphic Design',
+    'Product Management',
+    'React & JavaScript',
+    'Cloud Architecture',
+    'UI/UX Design',
+    'Data Analysis',
+    'Security & Compliance'
   ];
 
   const filteredSuggestions = suggestedSkills.filter(
@@ -82,7 +80,6 @@ export default function OnboardingCapabilitiesPage({ setActivePage, onSaveCapabi
   };
 
   const handleContinue = () => {
-    // Criterion 2: Missing optional data never blocks form submission or page navigation
     persistCurrentDraft();
     if (onSaveCapabilities) onSaveCapabilities(selectedChips);
     setActivePage('onboarding-proof');
@@ -103,29 +100,29 @@ export default function OnboardingCapabilitiesPage({ setActivePage, onSaveCapabi
       <WizardProgress
         currentStep={4}
         totalSteps={6}
-        stepTitle="CAPABILITIES & SERVICES"
+        stepTitle="SKILLS & SERVICES"
         setActivePage={setActivePage}
         onSaveDraft={() => persistCurrentDraft()}
       />
 
-      {/* Main Tactile Dossier Container */}
+      {/* Main Container */}
       <div className="dossier-card rounded-3xl p-5 sm:p-10 border-3 border-slate-900 shadow-[6px_6px_0px_0px_#0f172a] sm:shadow-[8px_8px_0px_0px_#0f172a] relative overflow-hidden bg-[#fbcfe8] text-slate-900">
         {/* Top Metallic Clip */}
         <div className="dossier-clip">
           <Paperclip className="w-3.5 h-3.5 text-amber-300" />
-          <span>CAPABILITIES DOSSIER</span>
+          <span>STEP 4 OF 6: SKILLS & SERVICES</span>
         </div>
 
         {/* Header */}
         <div className="text-center space-y-2 pb-6 border-b-2 border-slate-900/60">
           <span className="pill-header inline-block text-xs font-mono bg-emerald-300 text-slate-900">
-            Skills & Capacities
+            Skills & Services
           </span>
           <h1 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight pt-1">
-            “What can you deliver?”
+            What do you do best?
           </h1>
           <p className="text-xs sm:text-sm font-extrabold text-slate-800 leading-relaxed max-w-lg mx-auto">
-            Add your core capabilities. At least 1 capability is recommended for minimum credible publishing.
+            Add your core skills, services, or specialties so visitors and clients know what you offer.
           </p>
         </div>
 
@@ -139,7 +136,7 @@ export default function OnboardingCapabilitiesPage({ setActivePage, onSaveCapabi
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Search or enter capability..."
+                placeholder="Search or type a skill (e.g. Web Development, Graphic Design)..."
                 className="w-full bg-transparent py-3 sm:py-3.5 pr-3 text-xs sm:text-sm font-bold text-slate-900 placeholder-slate-400 focus:outline-none"
               />
               {searchQuery && (
@@ -175,7 +172,7 @@ export default function OnboardingCapabilitiesPage({ setActivePage, onSaveCapabi
           <div className="space-y-2">
             <span className="text-xs font-mono font-black text-slate-900 uppercase tracking-wider block flex items-center gap-1">
               <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-              Suggested {draft.profileType === 'business' ? 'Capacities' : 'Capabilities'}
+              Popular suggestions
             </span>
             <div className="flex flex-wrap gap-2">
               {suggestedSkills.map((skill) => {
@@ -206,15 +203,15 @@ export default function OnboardingCapabilitiesPage({ setActivePage, onSaveCapabi
           {/* Selected Chips Container */}
           <div className="bg-white p-4 sm:p-5 rounded-2xl border-3 border-slate-900 shadow-[4px_4px_0px_0px_#0f172a] space-y-3 min-h-[100px]">
             <div className="flex items-center justify-between text-xs font-mono font-black text-slate-900 uppercase border-b-2 border-slate-900/20 pb-2">
-              <span>SELECTED CAPABILITIES ({selectedChips.length})</span>
+              <span>ADDED SKILLS ({selectedChips.length})</span>
               {selectedChips.length >= 1 ? (
                 <span className="text-emerald-700 font-extrabold flex items-center gap-1">
                   <CheckCircle2 className="w-3.5 h-3.5" />
-                  Minimum Credible Met!
+                  Looking good!
                 </span>
               ) : (
                 <span className="text-amber-800 font-extrabold text-[11px]">
-                  Add at least 1 capability
+                  Tip: Add at least 1 skill
                 </span>
               )}
             </div>
@@ -250,7 +247,7 @@ export default function OnboardingCapabilitiesPage({ setActivePage, onSaveCapabi
             )}
           </div>
 
-          {/* Navigation Controls: Back & Continue (Never a dead-end) */}
+          {/* Navigation Controls: Back & Continue */}
           <div className="flex items-center gap-3 pt-3">
             <button
               type="button"
@@ -266,7 +263,7 @@ export default function OnboardingCapabilitiesPage({ setActivePage, onSaveCapabi
               onClick={handleContinue}
               className="w-2/3 py-3.5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-black text-xs sm:text-base shadow-[4px_4px_0px_0px_#059669] border-2 border-slate-900 transition-all cursor-pointer flex items-center justify-center gap-2 min-h-[44px]"
             >
-              <span>Continue to Proof</span>
+              <span>Continue to Work Samples</span>
               <ArrowRight className="w-5 h-5 text-emerald-300 shrink-0" />
             </button>
           </div>
@@ -278,7 +275,7 @@ export default function OnboardingCapabilitiesPage({ setActivePage, onSaveCapabi
               onClick={handleContinue}
               className="text-xs font-mono font-black text-slate-700 hover:text-slate-900 underline cursor-pointer"
             >
-              Skip or add more capabilities later
+              Skip this step for now
             </button>
           </div>
         </div>

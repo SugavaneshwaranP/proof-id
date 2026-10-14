@@ -18,7 +18,7 @@ export default function EvidenceModal({ isOpen, onClose, evidence }) {
           <div className="dossier-clip">
             <Paperclip className="w-3.5 h-3.5 text-amber-300" />
             <span className="text-[10px] font-mono font-black">
-              OFFICIAL PROOF FILE #{evidence.id || 'EV-9402'}
+              VERIFIED WORK SAMPLE #{evidence.id || '9402'}
             </span>
           </div>
 
@@ -51,14 +51,14 @@ export default function EvidenceModal({ isOpen, onClose, evidence }) {
                   evidence.status === 'expired' ? 'bg-slate-800 text-slate-400 border-slate-600' :
                   'bg-blue-900 text-blue-200 border-blue-600'
                 }`}>
-                  {evidence.status === 'verified' ? '★ VERIFIER CONFIRMED ★' :
+                  {evidence.status === 'verified' ? '★ CONFIRMED ★' :
                    evidence.status === 'pending' ? '⏳ PENDING CONFIRMATION' :
-                   evidence.status === 'declined' ? '✕ DISPUTED / DECLINED' :
-                   evidence.status === 'expired' ? '⚠️ EXPIRED PROOF' :
-                   '📝 SELF-ADDED (UNVERIFIED)'}
+                   evidence.status === 'declined' ? '✕ DECLINED' :
+                   evidence.status === 'expired' ? '⚠️ EXPIRED' :
+                   '📝 SELF-SUBMITTED'}
                 </span>
                 <span className="text-[10px] font-mono font-black bg-slate-800 text-emerald-300 px-2 py-0.5 rounded border border-slate-700 uppercase">
-                  {evidence.category || evidence.type || 'Proof Document'}
+                  {evidence.category || evidence.type || 'Work Sample'}
                 </span>
               </div>
               <h3 className="text-base sm:text-xl font-bold text-white pt-1 break-words">
@@ -67,51 +67,51 @@ export default function EvidenceModal({ isOpen, onClose, evidence }) {
             </div>
           </div>
 
-          {/* Detailed Verification Information */}
+          {/* Detailed Information */}
           <div className="space-y-4 text-xs sm:text-sm mb-6">
             <div className="bg-slate-950/90 border-2 border-slate-800 rounded-2xl p-3.5 sm:p-4 space-y-2.5 shadow-inner">
               <div className="flex items-center justify-between text-slate-400 text-xs font-mono">
                 <span className="flex items-center gap-1.5 text-slate-400">
                   <User className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                  Verifier:
+                  Confirmed By:
                 </span>
                 <span className="text-slate-200 font-bold truncate ml-2">
-                  {evidence.verifier_name || 'Confirmed Peer Auditor'}
+                  {evidence.verifier_name || 'Colleague / Client'}
                 </span>
               </div>
               <div className="flex items-center justify-between text-slate-400 text-xs font-mono">
                 <span className="flex items-center gap-1.5 text-slate-400">
                   <Calendar className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                  Verification Date:
+                  Confirmed On:
                 </span>
                 <span className="text-slate-200 font-bold">
-                  {evidence.created_at ? evidence.created_at.split('T')[0] : '2026-03-10'}
+                  {evidence.created_at ? evidence.created_at.split('T')[0] : 'Recent'}
                 </span>
               </div>
               <div className="flex items-center justify-between text-slate-400 text-xs font-mono">
                 <span className="flex items-center gap-1.5 text-slate-400">
                   <Lock className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                  RLS Isolation:
+                  Security Status:
                 </span>
-                <span className="text-emerald-400 font-bold">100% Kernel Enforced</span>
+                <span className="text-emerald-400 font-bold">Verified & Protected</span>
               </div>
             </div>
 
-            {/* Scope / Verifier Endorsement Statement */}
+            {/* Note */}
             <div className="space-y-1.5">
               <span className="text-[10px] font-mono font-black uppercase text-amber-300 tracking-wider block">
-                Verifier Endorsement & Scope:
+                Confirmation Note:
               </span>
               <div className="p-3.5 sm:p-4 bg-slate-950/60 border border-slate-700 rounded-2xl text-slate-200 italic text-xs leading-relaxed">
-                "{evidence.verifier_note || evidence.scope || 'Confirmed architectural contribution, component primitives design, and migration implementation on production repository.'}"
+                "{evidence.verifier_note || evidence.scope || 'Confirmed contribution and successful project completion.'}"
               </div>
             </div>
 
-            {/* Freshness / Changed-Since-Verification Notice (Slice 5 requirement) */}
+            {/* Freshness Notice */}
             {evidence.changed_since_verification && (
               <div className="p-3 bg-amber-950/50 border border-amber-500/60 rounded-xl text-amber-200 text-xs flex items-center gap-2">
                 <span className="text-sm">⚠️</span>
-                <span><strong>Freshness Alert:</strong> Associated profile claims were updated after this verification was recorded.</span>
+                <span><strong>Notice:</strong> This profile was updated after this confirmation was recorded.</span>
               </div>
             )}
           </div>
@@ -122,7 +122,7 @@ export default function EvidenceModal({ isOpen, onClose, evidence }) {
               onClick={onClose}
               className="px-4 py-2.5 rounded-xl text-slate-300 hover:bg-slate-800 transition-colors text-xs sm:text-sm font-semibold cursor-pointer min-h-[44px] flex items-center justify-center"
             >
-              Close Dossier
+              Close
             </button>
             {(evidence.file_url || evidence.url) && (
               <a
@@ -131,7 +131,7 @@ export default function EvidenceModal({ isOpen, onClose, evidence }) {
                 rel="noopener noreferrer"
                 className="px-4 py-2.5 rounded-xl bg-emerald-400 hover:bg-emerald-300 text-slate-900 font-black text-xs sm:text-sm shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer min-h-[44px]"
               >
-                <span>Inspect Source Artifact</span>
+                <span>View Project / File</span>
                 <ExternalLink className="w-4 h-4" />
               </a>
             )}

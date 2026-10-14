@@ -54,6 +54,39 @@ export const profileRepository = {
   },
 
   /**
+   * Fetch complete public bundle in a single atomic database RPC call
+   * Returns { profile, business_details, capabilities, evidence, projects, products }
+   */
+  async getPublicBundle(slug) {
+    if (!slug) throw new Error("Slug is required");
+
+    try {
+      const { data, error } = await supabase.rpc("get_public_profile_bundle", {
+        p_slug: slug.toLowerCase(),
+      });
+
+      if (!error && data) {
+        return data;
+      }
+    } catch (err) {
+      console.warn("[profileRepository] RPC get_public_profile_bundle fallback:", err);
+    }
+
+    // Graceful fallback to getBySlug if RPC migration has not been applied
+    const profile = await this.getBySlug(slug);
+    if (!profile) return null;
+
+    return {
+      profile,
+      business_details: profile.businessDetails,
+      capabilities: profile.capabilities || [],
+      evidence: [],
+      projects: [],
+      products: [],
+    };
+  },
+
+  /**
    * Fetch current authenticated user's profile
    */
   async getCurrentUserProfile() {
@@ -94,6 +127,7 @@ export const profileRepository = {
 
     // Whitelist only client-writable fields to prevent tampering
     const allowed = {
+      slug: updates.slug ? updates.slug.trim().toLowerCase() : undefined,
       full_name: updates.full_name || updates.fullName,
       business_name: updates.business_name || updates.businessName,
       headline: updates.headline,
@@ -127,6 +161,113 @@ export const profileRepository = {
 
     return data;
   },
+
+  /**
+   * Attach a capability to user's profile
+   */
+  async addCapability(profileId, name, category = "General") {
+    if (!profileId || !name) throw new Error("profileId and name are required");
+    const cleanName = name.trim();
+
+    try {
+      // 1. Try secure RPC
+      const { data, error } = await supabase.rpc("add_profile_capability", {
+        p_capability_name: cleanName,
+        p_category: category,
+      });
+      if (!error && data) return data;
+    } catch {
+      // Fallback to table queries
+    }
+
+    // Fallback: lookup or insert in capabilities
+    let capId = null;
+    const { data: existingCap } = await supabase
+      .from("capabilities")
+      .select("id")
+      .ilike("name", cleanName)
+      .maybeSingle();
+
+    if (existingCap) {
+      capId = existingCap.id;
+    } else {
+      const { data: newCap } = await supabase
+        .from("capabilities")
+        .insert({ name: cleanName, category })
+        .select()
+        .maybeSingle();
+      capId = newCap?.id;
+    }
+
+    if (capId) {
+      await supabase
+        .from("profile_capabilities")
+        .insert({ profile_id: profileId, capability_id: capId })
+        .select();
+    }
+
+    return { name: cleanName, category };
+  },
+
+  /**
+   * Remove a capability from profile
+   */
+  async removeCapability(profileId, capabilityId) {
+    if (!profileId || !capabilityId) throw new Error("profileId and capabilityId are required");
+    const { error } = await supabase
+      .from("profile_capabilities")
+      .delete()
+      .eq("profile_id", profileId)
+      .eq("capability_id", capabilityId);
+    if (error) throw error;
+    return true;
+  },
+
+  /**
+   * Fetch user account & notification settings
+   */
+  async getProfileSettings(profileId) {
+    if (!profileId) return null;
+    const { data, error } = await supabase
+      .from("profile_settings")
+      .select("*")
+      .eq("profile_id", profileId)
+      .maybeSingle();
+    if (error) {
+      console.warn("[profileRepository] Error fetching settings:", error);
+      return null;
+    }
+    return data;
+  },
+
+  /**
+   * Update user account & notification settings
+   */
+  async updateProfileSettings(profileId, settings) {
+    if (!profileId) throw new Error("profileId is required");
+    const payload = {
+      profile_id: profileId,
+      notify_new_messages: settings.notify_new_messages ?? settings.notifyNewMessages,
+      notify_verifications: settings.notify_verifications ?? settings.notifyVerifications,
+      notify_weekly_digest: settings.notify_weekly_digest ?? settings.notifyWeeklyDigest,
+      visibility: settings.visibility || "public",
+      updated_at: new Date().toISOString(),
+    };
+    Object.keys(payload).forEach((k) => payload[k] === undefined && delete payload[k]);
+
+    const { data, error } = await supabase
+      .from("profile_settings")
+      .upsert(payload)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("[profileRepository] Error saving settings:", error);
+      throw error;
+    }
+    return data;
+  },
+
 
   /**
    * Update or insert business details extension

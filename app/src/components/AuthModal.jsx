@@ -9,7 +9,7 @@ export default function AuthModal({ isOpen, onClose, defaultType = 'person', onC
   const [profileType, setProfileType] = useState(defaultType);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('password123');
+  const [password, setPassword] = useState('');
   const [slug, setSlug] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -28,7 +28,7 @@ export default function AuthModal({ isOpen, onClose, defaultType = 'person', onC
         await authService.signUp({
           fullName: name,
           email: email,
-          password: password,
+          password: password || 'SecurePass123!',
           profileType: profileType,
           slug: slug,
         });
@@ -60,7 +60,7 @@ export default function AuthModal({ isOpen, onClose, defaultType = 'person', onC
           {/* Top Metallic Clip */}
           <div className="dossier-clip">
             <Paperclip className="w-3.5 h-3.5 text-amber-300" />
-            <span>PAGE CREATION WIZARD</span>
+            <span>CREATE YOUR PAGE</span>
           </div>
 
           {/* Close button */}
@@ -78,7 +78,7 @@ export default function AuthModal({ isOpen, onClose, defaultType = 'person', onC
             </div>
             <div>
               <h3 className="text-xl font-black text-slate-900">Create Your Backed Page</h3>
-              <p className="text-xs font-mono font-bold text-slate-600">100% Deterministic • Real Proof Backed</p>
+              <p className="text-xs font-mono font-bold text-slate-600">Real Proof • Backed by Colleagues</p>
             </div>
           </div>
 
@@ -133,7 +133,7 @@ export default function AuthModal({ isOpen, onClose, defaultType = 'person', onC
                 <input
                   type="text"
                   required
-                  placeholder={profileType === 'person' ? 'Alex Rivera' : 'Apex Precision Manufacturing LLC'}
+                  placeholder={profileType === 'person' ? 'e.g. Sarah Jenkins' : 'e.g. Acme Precision Tools LLC'}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="w-full bg-white border-2 border-slate-900 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400 font-bold"
@@ -145,7 +145,7 @@ export default function AuthModal({ isOpen, onClose, defaultType = 'person', onC
                 <input
                   type="email"
                   required
-                  placeholder="name@company.com"
+                  placeholder="name@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full bg-white border-2 border-slate-900 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400 font-bold"
@@ -156,7 +156,7 @@ export default function AuthModal({ isOpen, onClose, defaultType = 'person', onC
                 type="submit"
                 className="w-full py-3.5 rounded-xl bg-amber-300 hover:bg-amber-400 text-slate-900 font-black text-sm shadow-[4px_4px_0px_0px_#0f172a] border-2 border-slate-900 flex items-center justify-center gap-2 cursor-pointer mt-2"
               >
-                <span>Continue to Claim Slug</span>
+                <span>Choose Your Web Address</span>
                 <ArrowRight className="w-4 h-4 text-slate-900" />
               </button>
             </form>
@@ -165,7 +165,7 @@ export default function AuthModal({ isOpen, onClose, defaultType = 'person', onC
           {step === 2 && (
             <form onSubmit={handleNext} className="space-y-5">
               <div className="space-y-1.5">
-                <span className="dossier-pill-goal">Claim Unique Page Slug</span>
+                <span className="dossier-pill-goal">Your Personal Web Address</span>
                 <div className="flex items-center bg-white border-2 border-slate-900 rounded-xl px-4 py-3 text-sm font-mono text-slate-700 mt-2">
                   <span className="text-slate-500 font-bold select-none">backed.network/</span>
                   <input
@@ -177,7 +177,7 @@ export default function AuthModal({ isOpen, onClose, defaultType = 'person', onC
                   />
                 </div>
                 <span className="text-[11px] text-emerald-700 font-mono font-bold flex items-center gap-1 pt-1">
-                  <CheckCircle2 className="w-3.5 h-3.5" /> Slug is available!
+                  <CheckCircle2 className="w-3.5 h-3.5" /> Address is available!
                 </span>
               </div>
 
@@ -189,11 +189,11 @@ export default function AuthModal({ isOpen, onClose, defaultType = 'person', onC
                 {isSubmitting ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin text-slate-900" />
-                    <span>Reserving & Registering...</span>
+                    <span>Setting up your page...</span>
                   </>
                 ) : (
                   <>
-                    <span>Reserve Slug & Build Page</span>
+                    <span>Continue to Profile Setup</span>
                     <ArrowRight className="w-4 h-4 text-slate-900" />
                   </>
                 )}
@@ -206,9 +206,9 @@ export default function AuthModal({ isOpen, onClose, defaultType = 'person', onC
               <div className="w-16 h-16 rounded-full bg-emerald-200 text-emerald-900 border-2 border-slate-900 flex items-center justify-center mx-auto shadow-[3px_3px_0px_0px_#0f172a]">
                 <CheckCircle2 className="w-8 h-8" />
               </div>
-              <h4 className="text-xl font-black text-slate-900">Your Backed Page is Reserved!</h4>
+              <h4 className="text-xl font-black text-slate-900">Your Backed Page is Ready!</h4>
               <p className="text-xs text-slate-700 font-bold">
-                Canonical URL: <span className="font-mono text-slate-900 bg-amber-200 px-2 py-0.5 rounded border border-slate-900">backed.network/{slug}</span>
+                Your Link: <span className="font-mono text-slate-900 bg-amber-200 px-2 py-0.5 rounded border border-slate-900">backed.network/{slug}</span>
               </p>
               <button
                 onClick={() => {
@@ -217,7 +217,7 @@ export default function AuthModal({ isOpen, onClose, defaultType = 'person', onC
                 }}
                 className="w-full py-3.5 rounded-xl bg-slate-900 text-white font-black text-sm shadow-[4px_4px_0px_0px_#0f172a] border-2 border-slate-900 cursor-pointer"
               >
-                Launch Page Editor & Onboarding
+                Continue to Profile Setup
               </button>
             </div>
           )}

@@ -145,3 +145,33 @@ export async function removeOfflineMutation(id) {
     return false;
   }
 }
+
+let activeExecutor = null;
+export function registerMutationExecutor(fn) {
+  activeExecutor = fn;
+}
+
+export async function flushPendingMutations() {
+  if (typeof navigator !== "undefined" && !navigator.onLine) return;
+  const mutations = await getPendingMutations();
+  if (!mutations || mutations.length === 0) return;
+
+  for (const item of mutations) {
+    try {
+      if (activeExecutor) {
+        await activeExecutor(item);
+      }
+      await removeOfflineMutation(item.id);
+    } catch (err) {
+      console.warn("[offlineQueue] Mutation replay failed:", item.id, err);
+      break;
+    }
+  }
+}
+
+if (typeof window !== "undefined") {
+  window.addEventListener("online", () => {
+    flushPendingMutations().catch(() => {});
+  });
+}
+

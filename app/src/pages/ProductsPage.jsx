@@ -11,47 +11,47 @@ export default function ProductsPage({ setActivePage }) {
   const offerings = [
     {
       id: 'person-verification',
-      badge: 'Person Primitive',
-      title: 'Individual Proof Verification',
-      desc: 'For software engineers, creators, consultants, and individual professionals seeking verifiable proof.',
+      badge: 'For Individuals',
+      title: 'Individual Profile & Proof',
+      desc: 'For software engineers, designers, creators, consultants, and freelancers seeking verifiable proof.',
       icon: User,
       color: 'from-blue-600 to-indigo-600',
       features: [
-        'Normalized capability taxonomy chips',
-        'Project portfolio items & proof links',
-        'Peer verification request generator',
-        '100% deterministic profile completion score',
-        'Zero-login shareable profile URL'
+        'Skills & capability tags',
+        'Project portfolio items & work sample links',
+        'Colleague confirmation requests',
+        'Real-time profile completion score',
+        'Shareable public profile link'
       ]
     },
     {
       id: 'b2b-vault',
-      badge: 'Business Primitive',
-      title: 'B2B Supplier Verification Vault',
-      desc: 'For manufacturers, wholesalers, exporters, and agencies detailing capacities, MOQs, and lead times.',
+      badge: 'For Businesses',
+      title: 'Business Supplier Profile',
+      desc: 'For manufacturers, suppliers, wholesalers, and agencies detailing capacities, minimum orders, and lead times.',
       icon: Building2,
       color: 'from-cyan-600 to-blue-600',
       features: [
-        'Standardized product catalogs with MOQs',
-        'ISO & registration certificate vault',
-        'Production unit & capacity specifications',
+        'Product & service catalog with minimum orders',
+        'Official quality & registration certificates',
+        'Production capacity & delivery timelines',
         'Commercial & payment terms display',
-        'Direct inquiry & quote request CTA'
+        'Direct inquiry & quote requests'
       ]
     },
     {
       id: 'matching-engine',
-      badge: 'Discovery Engine',
-      title: 'Deterministic Matching Engine',
-      desc: 'Connect buyers to suppliers and recruiters to talent using a transparent, decomposable match algorithm.',
+      badge: 'Community Search',
+      title: 'Profile Discovery',
+      desc: 'Connect buyers to suppliers and recruiters to talent using clear, transparent criteria.',
       icon: Search,
       color: 'from-indigo-600 to-cyan-500',
       features: [
-        'Capability overlap ratio calculation (40%)',
-        'Evidence match ratio calculation (25%)',
-        'Availability & location proximity filter',
-        'Decomposable match reason explanation',
-        'Postgres GIN index search query'
+        'Skill & requirement matching',
+        'Verified work sample verification',
+        'Availability & location filters',
+        'Clear match breakdown',
+        'Instant lightning-fast search'
       ]
     }
   ];
@@ -62,16 +62,16 @@ export default function ProductsPage({ setActivePage }) {
       priceMonthly: '$0',
       priceAnnual: '$0',
       period: 'forever free',
-      desc: 'Essential proof verification for individuals and open source creators.',
+      desc: 'Essential proof verification for individuals and creators.',
       popular: false,
       buttonText: 'Start Free Profile',
       features: [
-        '1 Person Profile',
-        'Up to 8 Capability Chips',
-        'Unlimited Proof Links',
-        '3 Peer Verification Requests/mo',
-        'Standard Public Profile URL',
-        'Deterministic Completion Engine'
+        '1 Individual Profile',
+        'Up to 8 Skill Tags',
+        'Unlimited Work Sample Links',
+        '3 Colleague Confirmation Requests / month',
+        'Personal Web Link',
+        'Profile Completion Checklist'
       ]
     },
     {
@@ -79,17 +79,17 @@ export default function ProductsPage({ setActivePage }) {
       priceMonthly: '$29',
       priceAnnual: '$22',
       period: 'per month, billed annually',
-      desc: 'For active consultants, senior engineers, and growing agencies.',
+      desc: 'For active consultants, senior engineers, and growing teams.',
       popular: true,
       buttonText: 'Get Pro Verifier',
       features: [
         'Everything in Individual Free',
-        'Unlimited Peer Verification Requests',
-        'Supabase Storage Document Vault (5GB)',
-        'Short-lived Signed URLs with Expiration',
-        'Custom Domain & Custom Slug Reservation',
-        'Dynamic QR Code & Open Graph Generator',
-        'Priority Peer Verification Processing'
+        'Unlimited Colleague Confirmation Requests',
+        'Secure Document Storage (5GB)',
+        'Expiring Private Document Links',
+        'Custom Web Address & Domain',
+        'QR Code & Social Preview Cards',
+        'Priority Confirmation Processing'
       ]
     },
     {
@@ -97,29 +97,29 @@ export default function ProductsPage({ setActivePage }) {
       priceMonthly: '$99',
       priceAnnual: '$79',
       period: 'per month, billed annually',
-      desc: 'For manufacturers, suppliers, and enterprise procurement teams.',
+      desc: 'For manufacturers, suppliers, and commercial partners.',
       popular: false,
       buttonText: 'Contact Enterprise',
       features: [
-        'Full B2B Business Profile Schema',
-        'Standardized Product Catalog & MOQs',
-        'ISO & Facility Document Verification',
-        'Deterministic Buyer Matching Engine',
-        'Row Level Security (RLS) Sub-Accounts',
-        'Dedicated SLA & Verification Support',
-        'API Access for Automated Verification'
+        'Full Business Profile',
+        'Product Catalog & Minimum Orders',
+        'Certificate & Facility Document Verification',
+        'Direct Buyer Inquiries',
+        'Secure Team Member Sub-Accounts',
+        'Dedicated Support',
+        'Custom Integrations'
       ]
     }
   ];
 
   const featureComparison = [
-    { feature: 'Deterministic Completion Score', free: true, pro: true, enterprise: true },
-    { feature: 'Capability Taxonomy Chips', free: '8 Max', pro: 'Unlimited', enterprise: 'Unlimited' },
-    { feature: 'Signed Storage URLs', free: false, pro: true, enterprise: true },
-    { feature: 'B2B Product Catalogs & MOQs', free: false, pro: false, enterprise: true },
-    { feature: 'Deterministic Matching Score', free: false, pro: true, enterprise: true },
-    { feature: 'Zero AI Hallucination Guarantee', free: true, pro: true, enterprise: true },
-    { feature: 'Row Level Security Isolation', free: true, pro: true, enterprise: true }
+    { feature: 'Profile Completion Score', free: true, pro: true, enterprise: true },
+    { feature: 'Skill & Capability Tags', free: '8 Max', pro: 'Unlimited', enterprise: 'Unlimited' },
+    { feature: 'Secure Document Sharing', free: false, pro: true, enterprise: true },
+    { feature: 'Product Catalog & Minimum Orders', free: false, pro: false, enterprise: true },
+    { feature: 'Transparent Matching Score', free: false, pro: true, enterprise: true },
+    { feature: 'Real Person Verification Guarantee', free: true, pro: true, enterprise: true },
+    { feature: 'Privacy & Data Protection', free: true, pro: true, enterprise: true }
   ];
 
   return (
@@ -128,13 +128,13 @@ export default function ProductsPage({ setActivePage }) {
       {/* Header */}
       <div className="text-center max-w-3xl mx-auto space-y-4">
         <span className="dossier-stamp font-mono">
-          ★ SPECIFICATION PLANS ★
+          ★ PLANS & PRICING ★
         </span>
         <h1 className="text-4xl sm:text-5xl font-extrabold text-white tracking-tight">
-          Verifiable Identity Solutions
+          Simple Plans for Real Work
         </h1>
         <p className="text-slate-300 text-base sm:text-lg">
-          Clear, transparent offerings with 100% deterministic rules. No hidden fees or AI black-box scoring.
+          Clear, transparent plans for individuals and businesses. No hidden fees or automated black-boxes.
         </p>
       </div>
 
@@ -146,7 +146,7 @@ export default function ProductsPage({ setActivePage }) {
             <div key={item.id} className="dossier-card p-8 flex flex-col justify-between hover:border-blue-500/50 transition-all">
               <div className="dossier-clip">
                 <Paperclip className="w-3.5 h-3.5 text-cyan-400" />
-                <span>OFFERING SPEC FILE</span>
+                <span>PLAN DETAILS</span>
               </div>
 
               <div className="space-y-4 pt-2">
@@ -221,7 +221,7 @@ export default function ProductsPage({ setActivePage }) {
             >
               <div className="dossier-clip">
                 <Paperclip className="w-3.5 h-3.5 text-cyan-400" />
-                <span>PLAN DOSSIER</span>
+                <span>{plan.name.toUpperCase()}</span>
               </div>
 
               {plan.popular && (

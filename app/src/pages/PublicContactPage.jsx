@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { dbStore } from '../lib/dbStore';
 
-export default function PublicContactPage({ name = 'Alex Rivera', slug = 'alexrivera', setActivePage }) {
+export default function PublicContactPage({ name = 'Profile Owner', slug = '', setActivePage }) {
   const [yourName, setYourName] = useState('');
   const [yourEmail, setYourEmail] = useState('');
   const [lookingFor, setLookingFor] = useState('');
@@ -44,26 +44,26 @@ export default function PublicContactPage({ name = 'Alex Rivera', slug = 'alexri
         <span className="stamp-verified text-xs py-0.5 px-3">★ DIRECT CONTACT ★</span>
       </div>
 
-      {/* Main Tactile Dossier Container */}
+      {/* Main Container */}
       <div className="dossier-card rounded-3xl p-4 sm:p-8 md:p-10 border-3 border-slate-900 shadow-[6px_6px_0px_0px_#0f172a] sm:shadow-[8px_8px_0px_0px_#0f172a] relative overflow-hidden bg-[#a7f3d0] text-slate-900">
 
         
         {/* Top Metallic Clip */}
         <div className="dossier-clip">
           <Paperclip className="w-3.5 h-3.5 text-amber-300" />
-          <span>CONTACT DOSSIER</span>
+          <span>SEND A MESSAGE</span>
         </div>
 
         {/* Headline & Subhead */}
         <div className="text-center space-y-2 pb-6 border-b-2 border-slate-900">
           <span className="pill-header inline-block text-xs font-mono bg-slate-900 text-white">
-            Direct Inquiry Form
+            Send a Message
           </span>
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight pt-1">
-            “Send a message to {name}”
+            Send a message to {name}
           </h1>
           <p className="text-xs font-extrabold text-slate-800">
-            Delivered in real-time directly to their Backed inbox.
+            Delivered directly to their inbox.
           </p>
         </div>
 
@@ -77,9 +77,9 @@ export default function PublicContactPage({ name = 'Alex Rivera', slug = 'alexri
               <CheckCircle2 className="w-8 h-8" />
             </div>
 
-            <h3 className="text-2xl font-black text-slate-900">Message Dispatched!</h3>
+            <h3 className="text-2xl font-black text-slate-900">Message Sent!</h3>
             <p className="text-xs font-bold text-slate-800 max-w-xs mx-auto">
-              Your inquiry has been sent to {name}'s verified inbox with real-time websocket delivery.
+              Your message has been delivered directly to {name}.
             </p>
 
             <button
@@ -98,7 +98,7 @@ export default function PublicContactPage({ name = 'Alex Rivera', slug = 'alexri
               <input
                 type="text"
                 required
-                placeholder="Jane Doe"
+                placeholder="e.g. Sarah Jenkins"
                 value={yourName}
                 onChange={(e) => setYourName(e.target.value)}
                 className="w-full bg-white border-2 border-slate-900 rounded-xl px-4 py-3 text-xs font-bold text-slate-900 focus:outline-none shadow-[2px_2px_0px_0px_#0f172a]"
@@ -110,7 +110,7 @@ export default function PublicContactPage({ name = 'Alex Rivera', slug = 'alexri
               <input
                 type="email"
                 required
-                placeholder="jane@company.com"
+                placeholder="e.g. sarah@example.com"
                 value={yourEmail}
                 onChange={(e) => setYourEmail(e.target.value)}
                 className="w-full bg-white border-2 border-slate-900 rounded-xl px-4 py-3 text-xs font-bold text-slate-900 focus:outline-none shadow-[2px_2px_0px_0px_#0f172a]"
@@ -121,7 +121,7 @@ export default function PublicContactPage({ name = 'Alex Rivera', slug = 'alexri
               <label className="text-xs font-mono font-black uppercase">Looking for help with</label>
               <input
                 type="text"
-                placeholder="e.g., Technical Advisory / Custom Component Order"
+                placeholder="e.g. Project inquiry, collaboration, or consulting"
                 value={lookingFor}
                 onChange={(e) => setLookingFor(e.target.value)}
                 className="w-full bg-white border-2 border-slate-900 rounded-xl px-4 py-3 text-xs font-bold text-slate-900 focus:outline-none shadow-[2px_2px_0px_0px_#0f172a]"
@@ -133,7 +133,7 @@ export default function PublicContactPage({ name = 'Alex Rivera', slug = 'alexri
               <textarea
                 rows={4}
                 required
-                placeholder="Share project details, timelines, or RFP notes..."
+                placeholder="Share your project requirements, timeline, or questions..."
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 className="w-full bg-white border-2 border-slate-900 rounded-xl p-4 text-xs font-bold text-slate-900 focus:outline-none shadow-[2px_2px_0px_0px_#0f172a] resize-none"

@@ -19,7 +19,7 @@ export default function ServerErrorPage({ setActivePage, onRetry }) {
         {/* Top Metallic Clip */}
         <div className="dossier-clip">
           <Paperclip className="w-3.5 h-3.5 text-amber-300" />
-          <span>500 ERROR DOSSIER</span>
+          <span>SYSTEM NOTICE</span>
         </div>
 
         {/* Illustration Badge */}

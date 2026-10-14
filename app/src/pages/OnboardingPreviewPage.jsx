@@ -20,16 +20,17 @@ export default function OnboardingPreviewPage({ setActivePage, onPublish }) {
     setDraft(d);
   }, []);
 
+  const currentUser = authService.getCurrentUser();
   const isBusiness = draft.profileType === 'business';
-  const displayName = isBusiness ? (draft.businessName || 'Apex Precision Dynamics LLC') : (draft.fullName || 'Alex Rivera');
-  const headline = isBusiness ? (draft.whatYouDo || 'Contract manufacturing & precision engineering') : (draft.headline || 'Backend developer who ships fast');
-  const location = draft.location || (isBusiness ? 'Austin, TX' : 'San Francisco, CA');
-  const slug = draft.slug || (isBusiness ? 'apex-dynamics' : 'alexrivera');
+  const displayName = isBusiness ? (draft.businessName || '') : (draft.fullName || currentUser?.fullName || '');
+  const headline = isBusiness ? (draft.whatYouDo || '') : (draft.headline || '');
+  const location = draft.location || '';
+  const slug = draft.slug || currentUser?.slug || '';
   const capabilities = draft.capabilities || [];
   const proofList = draft.proofList || [];
-  const contactMethod = draft.contactMethod || (isBusiness ? 'procurement@apex-dynamics.com' : 'alex@backed.network');
+  const contactMethod = draft.contactMethod || currentUser?.email || '';
 
-  // CRITERION 3: Minimum Credible Publishing checks (Name, 1 Capability, 1 Contact Method)
+  // Minimum publishing checks (Name, 1 Capability, 1 Contact Method)
   const hasName = Boolean(displayName && displayName.trim().length > 0);
   const hasCapability = Boolean(capabilities && capabilities.length >= 1);
   const hasContact = Boolean(contactMethod && contactMethod.trim().length > 0);
@@ -49,58 +50,84 @@ export default function OnboardingPreviewPage({ setActivePage, onPublish }) {
     setShowQuickContact(false);
   };
 
-  const handlePublish = () => {
+  const [publishError, setPublishError] = useState(null);
+  const [isPublishing, setIsPublishing] = useState(false);
+
+  const handlePublish = async () => {
     if (!isMinimumCredibleMet) return;
 
-    setIsPublished(true);
+    setIsPublishing(true);
+    setPublishError(null);
 
-    // Save final profile into dbStore
-    dbStore.updateProfile(slug, {
-      profile_type: draft.profileType || 'person',
-      full_name: displayName,
-      business_name: isBusiness ? displayName : undefined,
-      headline: headline,
-      location: location,
-      bio: draft.bio || 'Verified Backed profile. Deterministic credentials with real evidence.',
-      avatar_url: draft.photoUrl || (isBusiness ? 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?auto=format&fit=crop&q=80&w=200' : '/avatar_hero.png'),
-      is_published: true,
-      completion_score: 95,
-      contact_method: contactMethod,
-      capabilities: capabilities.map((c) => ({
-        name: c,
-        category: isBusiness ? 'Manufacturing' : 'Engineering',
-        endorsement_count: 5,
-      })),
-    });
-
-    // If proofs were added in draft, add them to dbStore
-    if (proofList.length > 0) {
-      proofList.forEach((proof) => {
-        dbStore.addEvidence(slug, {
-          title: proof.title,
-          category: isBusiness ? 'Certification' : 'Engineering Work',
-          verifier_name: 'Peer Verifier',
-          verifier_note: 'Verified in onboarding dossier.',
-          file_url: proof.linkOrFile,
-        });
+    try {
+      // 1. Update Profile in database
+      await dbStore.updateProfile(slug, {
+        profile_type: draft.profileType || 'person',
+        full_name: displayName,
+        business_name: isBusiness ? displayName : undefined,
+        headline: headline,
+        location: location,
+        bio: draft.bio || 'Verified profile on Backed.',
+        avatar_url: draft.photoUrl || (isBusiness ? 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?auto=format&fit=crop&q=80&w=200' : '/avatar_hero.png'),
+        availability_status: 'Available Now',
       });
+
+      // 2. Attach capabilities to profile
+      if (capabilities.length > 0) {
+        await Promise.all(
+          capabilities.map((c) =>
+            dbStore.addCapability(slug, c, isBusiness ? 'Manufacturing' : 'Engineering')
+          )
+        );
+      }
+
+      // 3. Persist evidence items
+      if (proofList.length > 0) {
+        await Promise.all(
+          proofList.map((proof) =>
+            dbStore.addEvidence(slug, {
+              title: proof.title,
+              category: isBusiness ? 'Certification' : 'Work Sample',
+              evidence_type: 'link',
+              file_url: proof.linkOrFile,
+            })
+          )
+        );
+      }
+
+      // 4. Publish profile
+      try {
+        await dbStore.publishProfile(slug);
+      } catch (rpcErr) {
+        console.warn("publishProfile fallback or already published:", rpcErr);
+      }
+
+      // 5. Update auth user metadata if authenticated
+      try {
+        await authService.updateProfile({
+          fullName: displayName,
+          slug: slug,
+        });
+      } catch (authErr) {
+        console.warn("authService.updateProfile skipped:", authErr?.message || authErr);
+      }
+
+      // Clear draft on successful publishing
+      clearOnboardingDraft();
+      setIsPublished(true);
+
+      if (onPublish) onPublish();
+
+      setTimeout(() => {
+        setActivePage('onboarding-published');
+      }, 1000);
+    } catch (err) {
+      console.error("Publish profile error:", err);
+      setPublishError(err.message || "Failed to publish profile. Please try again.");
+      setIsPublishing(false);
     }
-
-    // Update currentUser auth profile
-    authService.updateProfile({
-      fullName: displayName,
-      slug: slug,
-    });
-
-    // Clear draft on successful publishing
-    clearOnboardingDraft();
-
-    if (onPublish) onPublish();
-
-    setTimeout(() => {
-      setActivePage('onboarding-published');
-    }, 1200);
   };
+
 
   return (
     <div className="space-y-6 pb-20 max-w-3xl mx-auto px-3 sm:px-6 lg:px-8 pt-6 font-sans desk-grid-background">
@@ -112,7 +139,7 @@ export default function OnboardingPreviewPage({ setActivePage, onPublish }) {
         setActivePage={setActivePage}
       />
 
-      {/* CRITERION 3: Minimum Credible Publishing Checklist Banner */}
+      {/* Completion Checklist Banner */}
       <div className="bg-white border-3 border-slate-900 rounded-2xl p-4 sm:p-5 shadow-[5px_5px_0px_0px_#0f172a] space-y-3">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b-2 border-slate-900/20 pb-3">
           <div className="flex items-center gap-2">
@@ -121,12 +148,12 @@ export default function OnboardingPreviewPage({ setActivePage, onPublish }) {
             </div>
             <div>
               <span className="text-[10px] sm:text-xs font-mono font-black uppercase text-slate-500 block">
-                MINIMUM CREDIBLE PUBLISHING CRITERIA
+                PROFILE COMPLETION CHECKLIST
               </span>
               <p className="text-xs sm:text-sm font-black text-slate-900">
                 {isMinimumCredibleMet
-                  ? 'Minimum credible standard fulfilled — ready to publish!'
-                  : 'Fulfill the 3 required fields below to publish your profile.'}
+                  ? 'All key details filled in — ready to publish!'
+                  : 'Please complete the 3 required fields below to publish your profile.'}
               </p>
             </div>
           </div>
@@ -136,7 +163,7 @@ export default function OnboardingPreviewPage({ setActivePage, onPublish }) {
               isMinimumCredibleMet ? 'bg-emerald-300 text-slate-900' : 'bg-amber-200 text-amber-950'
             }`}
           >
-            {isMinimumCredibleMet ? '★ PUBLISHING READY ★' : 'CRITERIA PENDING'}
+            {isMinimumCredibleMet ? '★ READY TO PUBLISH ★' : 'DETAILS PENDING'}
           </span>
         </div>
 
@@ -154,7 +181,7 @@ export default function OnboardingPreviewPage({ setActivePage, onPublish }) {
               <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
             )}
             <div className="min-w-0">
-              <p className="text-[11px] font-mono font-black uppercase">1. Valid Name</p>
+              <p className="text-[11px] font-mono font-black uppercase">1. Name</p>
               <p className="text-xs font-bold truncate">{hasName ? displayName : 'Missing Name'}</p>
             </div>
           </div>
@@ -171,14 +198,14 @@ export default function OnboardingPreviewPage({ setActivePage, onPublish }) {
               <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
             )}
             <div className="min-w-0 flex-1">
-              <p className="text-[11px] font-mono font-black uppercase">2. 1+ Capability</p>
+              <p className="text-[11px] font-mono font-black uppercase">2. At least 1 Skill</p>
               <p className="text-xs font-bold truncate">
-                {hasCapability ? `${capabilities.length} listed` : 'Add 1 capability'}
+                {hasCapability ? `${capabilities.length} added` : 'Add 1 skill'}
               </p>
               {!hasCapability && (
                 <button
                   type="button"
-                  onClick={() => handleAddQuickCapability('Core Services')}
+                  onClick={() => handleAddQuickCapability('Professional Services')}
                   className="mt-1 text-[10px] font-mono font-black bg-amber-300 text-slate-900 px-2 py-0.5 rounded border border-slate-900 cursor-pointer"
                 >
                   + Add 1-Click
@@ -199,7 +226,7 @@ export default function OnboardingPreviewPage({ setActivePage, onPublish }) {
               <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
             )}
             <div className="min-w-0 flex-1">
-              <p className="text-[11px] font-mono font-black uppercase">3. Contact Method</p>
+              <p className="text-[11px] font-mono font-black uppercase">3. Contact Info</p>
               <p className="text-xs font-bold truncate">
                 {hasContact ? contactMethod : 'Add contact'}
               </p>
@@ -242,19 +269,19 @@ export default function OnboardingPreviewPage({ setActivePage, onPublish }) {
         {/* Top Metallic Clip */}
         <div className="dossier-clip">
           <Paperclip className="w-3.5 h-3.5 text-amber-300" />
-          <span>PRE-PUBLISH PREVIEW</span>
+          <span>STEP 6 OF 6: PREVIEW & PUBLISH</span>
         </div>
 
         {/* Header */}
         <div className="text-center space-y-2 pb-6 border-b-2 border-slate-900/60">
           <span className="pill-header inline-block text-xs font-mono bg-yellow-300 text-slate-900">
-            Live Preview Mode
+            Live Preview
           </span>
           <h1 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight pt-1">
-            “Here’s how your page looks”
+            Here’s how your page looks
           </h1>
           <p className="text-xs sm:text-sm font-extrabold text-slate-800">
-            Review your public identity dossier. Tweak anything before publishing live.
+            Review your public profile. Tweak anything before publishing live.
           </p>
         </div>
 
@@ -319,16 +346,16 @@ export default function OnboardingPreviewPage({ setActivePage, onPublish }) {
 
               {/* Bio Section */}
               <div className="space-y-1.5 pt-2 border-t-2 border-slate-900/20">
-                <span className="pill-header text-[10px]">Verified Statement</span>
+                <span className="pill-header text-[10px]">About</span>
                 <p className="text-xs font-bold text-slate-800 leading-relaxed">
-                  {draft.bio || 'Building resilient systems, verified capabilities, and real deliverables.'}
+                  {draft.bio || 'Verified profile on Backed.'}
                 </p>
               </div>
 
               {/* Capabilities Chips */}
               <div className="space-y-2 pt-2 border-t-2 border-slate-900/20">
                 <div className="flex items-center justify-between">
-                  <span className="pill-header text-[10px]">Capabilities ({capabilities.length})</span>
+                  <span className="pill-header text-[10px]">Skills & Services ({capabilities.length})</span>
                   <button
                     type="button"
                     onClick={() => setActivePage('onboarding-capabilities')}
@@ -349,20 +376,20 @@ export default function OnboardingPreviewPage({ setActivePage, onPublish }) {
                 </div>
               </div>
 
-              {/* Verified Proof Preview Card */}
+              {/* Work Samples Preview */}
               <div className="space-y-2 pt-2 border-t-2 border-slate-900/20">
                 <div className="flex items-center justify-between">
-                  <span className="pill-header text-[10px]">Proof Artifacts ({proofList.length})</span>
+                  <span className="pill-header text-[10px]">Work Samples ({proofList.length})</span>
                   <button
                     type="button"
                     onClick={() => setActivePage('onboarding-proof')}
                     className="text-[11px] font-mono font-black text-slate-700 hover:underline flex items-center gap-1 cursor-pointer"
                   >
-                    <Edit3 className="w-3 h-3" /> Add Proof
+                    <Edit3 className="w-3 h-3" /> Add Sample
                   </button>
                 </div>
                 {proofList.length === 0 ? (
-                  <p className="text-xs font-bold text-slate-600 italic">No proof artifacts attached yet (optional).</p>
+                  <p className="text-xs font-bold text-slate-600 italic">No work samples attached yet (optional).</p>
                 ) : (
                   <div className="space-y-2">
                     {proofList.map((p) => (
@@ -371,7 +398,7 @@ export default function OnboardingPreviewPage({ setActivePage, onPublish }) {
                         className="bg-emerald-50 p-3 sm:p-4 rounded-2xl border-2 border-slate-900 shadow-[2px_2px_0px_0px_#0f172a] space-y-1"
                       >
                         <div className="flex items-center justify-between">
-                          <span className="stamp-verified text-[9px] py-0.5 px-2">★ PROOF ATTACHED ★</span>
+                          <span className="stamp-verified text-[9px] py-0.5 px-2">★ WORK SAMPLE ★</span>
                           <span className="text-[10px] font-mono font-black text-slate-600">{p.dateHappened}</span>
                         </div>
                         <h4 className="text-xs font-black text-slate-900">{p.title}</h4>
@@ -385,6 +412,13 @@ export default function OnboardingPreviewPage({ setActivePage, onPublish }) {
 
             {/* Bottom Actions: Publish Button & Back Controls */}
             <div className="pt-4 space-y-3">
+              {publishError && (
+                <div className="p-3 bg-red-100 border-2 border-red-900 rounded-xl text-xs font-bold text-red-900 flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0 text-red-700" />
+                  <span>{publishError}</span>
+                </div>
+              )}
+
               <div className="flex items-center gap-3">
                 <button
                   type="button"
@@ -397,15 +431,15 @@ export default function OnboardingPreviewPage({ setActivePage, onPublish }) {
 
                 <button
                   type="button"
-                  disabled={!isMinimumCredibleMet}
+                  disabled={!isMinimumCredibleMet || isPublishing}
                   onClick={handlePublish}
                   className={`w-2/3 py-3.5 sm:py-4 rounded-2xl font-black text-xs sm:text-base border-2 border-slate-900 transition-all flex items-center justify-center gap-2 min-h-[44px] ${
-                    isMinimumCredibleMet
+                    isMinimumCredibleMet && !isPublishing
                       ? 'bg-slate-900 hover:bg-slate-800 text-white shadow-[4px_4px_0px_0px_#059669] cursor-pointer'
                       : 'bg-slate-200 text-slate-500 cursor-not-allowed shadow-none'
                   }`}
                 >
-                  <span>{isMinimumCredibleMet ? 'Looks good, publish live' : 'Fulfill 3 Criteria to Publish'}</span>
+                  <span>{isPublishing ? "Publishing your profile..." : isMinimumCredibleMet ? 'Looks good, publish live' : 'Complete required fields to publish'}</span>
                   <ArrowRight className="w-5 h-5 text-emerald-300 shrink-0" />
                 </button>
               </div>

@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, ArrowLeft, Paperclip, CheckCircle2, XCircle, Link2, Copy, Sparkles } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Paperclip, CheckCircle2, XCircle, Link2, Copy, Sparkles, Loader2 } from 'lucide-react';
 import WizardProgress from '../components/WizardProgress';
 import { getOnboardingDraft, saveOnboardingDraft } from '../lib/onboardingDraft';
+import { checkSlugAvailability } from '../lib/supabaseClient';
 
 export default function OnboardingSlugPage({ setActivePage, onSaveSlug }) {
   const [slug, setSlug] = useState(() => {
     const draft = getOnboardingDraft();
-    return draft.slug || 'alexrivera';
+    return draft.slug || '';
   });
   const [profileType, setProfileType] = useState('person');
   const [copied, setCopied] = useState(false);
+  const [isChecking, setIsChecking] = useState(false);
+  const [isAvailable, setIsAvailable] = useState(null);
 
   useEffect(() => {
     const draft = getOnboardingDraft();
@@ -18,22 +21,47 @@ export default function OnboardingSlugPage({ setActivePage, onSaveSlug }) {
     if (draft.profileType) setProfileType(draft.profileType);
   }, []);
 
-  // Taken slugs list for live validation check demonstration
-  const takenSlugs = ['backed', 'admin', 'verified', 'root', 'support'];
-
   const cleanSlug = slug.toLowerCase().replace(/[^a-z0-9_-]/g, '');
-  const isTaken = takenSlugs.includes(cleanSlug);
-  const isValid = cleanSlug.length >= 2 && !isTaken;
+
+  // Live debounce check against check_slug_availability
+  useEffect(() => {
+    if (!cleanSlug || cleanSlug.length < 2) {
+      setIsAvailable(null);
+      setIsChecking(false);
+      return;
+    }
+
+    const reservedSlugs = ['backed', 'admin', 'verified', 'root', 'support', 'api', 'dashboard'];
+    if (reservedSlugs.includes(cleanSlug)) {
+      setIsAvailable(false);
+      setIsChecking(false);
+      return;
+    }
+
+    setIsChecking(true);
+    const timer = setTimeout(async () => {
+      try {
+        const available = await checkSlugAvailability(cleanSlug);
+        setIsAvailable(available);
+      } catch {
+        setIsAvailable(true);
+      } finally {
+        setIsChecking(false);
+      }
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [cleanSlug]);
 
   const handleSlugChange = (e) => {
     const newSlug = e.target.value;
     setSlug(newSlug);
     const cleaned = newSlug.toLowerCase().replace(/[^a-z0-9_-]/g, '');
-    saveOnboardingDraft({ slug: cleaned || 'alexrivera', stepIndex: 2 });
+    saveOnboardingDraft({ slug: cleaned, stepIndex: 2 });
   };
 
   const handleContinue = () => {
-    const finalSlug = cleanSlug || 'alexrivera';
+    const finalSlug = cleanSlug || 'my-page';
     saveOnboardingDraft({ slug: finalSlug, stepIndex: 3 });
     if (onSaveSlug) onSaveSlug(finalSlug);
 
@@ -58,27 +86,27 @@ export default function OnboardingSlugPage({ setActivePage, onSaveSlug }) {
         totalSteps={6}
         stepTitle="CLAIM YOUR LINK"
         setActivePage={setActivePage}
-        onSaveDraft={() => saveOnboardingDraft({ slug: cleanSlug || 'alexrivera', stepIndex: 2 })}
+        onSaveDraft={() => saveOnboardingDraft({ slug: cleanSlug, stepIndex: 2 })}
       />
 
-      {/* Main Tactile Dossier Container */}
+      {/* Main Dossier Container */}
       <div className="dossier-card rounded-3xl p-5 sm:p-10 border-3 border-slate-900 shadow-[6px_6px_0px_0px_#0f172a] sm:shadow-[8px_8px_0px_0px_#0f172a] relative overflow-hidden bg-[#fef08a] text-slate-900">
         {/* Top Metallic Clip */}
         <div className="dossier-clip">
           <Paperclip className="w-3.5 h-3.5 text-amber-300" />
-          <span>LINK CLAIM DOSSIER</span>
+          <span>STEP 2 OF 6: YOUR LINK</span>
         </div>
 
         {/* Header */}
         <div className="text-center space-y-2 pb-6 border-b-2 border-slate-900/60">
           <span className="pill-header inline-block text-xs font-mono bg-emerald-300 text-slate-900">
-            Custom Address
+            Personal Web Address
           </span>
           <h1 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight pt-1">
             “Claim your page address”
           </h1>
           <p className="text-xs sm:text-sm font-extrabold text-slate-800">
-            This is the permanent URL people will inspect. Pick something simple.
+            This is the personal web address you will share with clients, partners, and employers.
           </p>
         </div>
 
@@ -107,7 +135,18 @@ export default function OnboardingSlugPage({ setActivePage, onSaveSlug }) {
           {/* Availability Check Helper */}
           <div className="min-h-[26px] flex items-center">
             <AnimatePresence mode="wait">
-              {isTaken ? (
+              {isChecking ? (
+                <motion.div
+                  key="checking"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="inline-flex items-center gap-2 bg-slate-100 text-slate-700 px-3 py-1.5 rounded-xl border-2 border-slate-900 font-bold text-xs shadow-[2px_2px_0px_0px_#0f172a]"
+                >
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-700" />
+                  <span>Checking database availability...</span>
+                </motion.div>
+              ) : isAvailable === false ? (
                 <motion.div
                   key="error"
                   initial={{ opacity: 0, y: -4 }}
@@ -116,9 +155,9 @@ export default function OnboardingSlugPage({ setActivePage, onSaveSlug }) {
                   className="inline-flex items-center gap-2 bg-red-100 text-red-900 px-3 py-1.5 rounded-xl border-2 border-slate-900 font-bold text-xs shadow-[2px_2px_0px_0px_#0f172a]"
                 >
                   <XCircle className="w-4 h-4 text-red-600 shrink-0" />
-                  <span>Someone already has that. Try another name.</span>
+                  <span>Already claimed in database. Pick another address.</span>
                 </motion.div>
-              ) : cleanSlug.length >= 2 ? (
+              ) : isAvailable === true ? (
                 <motion.div
                   key="success"
                   initial={{ opacity: 0, y: -4 }}
@@ -127,7 +166,7 @@ export default function OnboardingSlugPage({ setActivePage, onSaveSlug }) {
                   className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-900 px-3 py-1.5 rounded-xl border-2 border-slate-900 font-bold text-xs shadow-[2px_2px_0px_0px_#0f172a]"
                 >
                   <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
-                  <span>Available — backed.network/{cleanSlug}</span>
+                  <span>Available in database — backed.network/{cleanSlug}</span>
                 </motion.div>
               ) : (
                 <span className="text-xs font-extrabold text-slate-700 font-mono">
@@ -142,7 +181,7 @@ export default function OnboardingSlugPage({ setActivePage, onSaveSlug }) {
             <div className="flex items-center justify-between text-xs font-mono font-black text-slate-700 uppercase">
               <span className="flex items-center gap-1.5 text-slate-900">
                 <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                LIVE PREVIEW
+                CANONICAL DATABASE PREVIEW
               </span>
               <button
                 type="button"
@@ -173,8 +212,9 @@ export default function OnboardingSlugPage({ setActivePage, onSaveSlug }) {
 
             <button
               type="button"
+              disabled={isAvailable === false}
               onClick={handleContinue}
-              className="w-2/3 py-3.5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-black text-xs sm:text-base shadow-[4px_4px_0px_0px_#059669] border-2 border-slate-900 transition-all cursor-pointer flex items-center justify-center gap-2 min-h-[44px]"
+              className="w-2/3 py-3.5 rounded-2xl bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white font-black text-xs sm:text-base shadow-[4px_4px_0px_0px_#059669] border-2 border-slate-900 transition-all cursor-pointer flex items-center justify-center gap-2 min-h-[44px]"
             >
               <span>Continue</span>
               <ArrowRight className="w-5 h-5 text-emerald-300 shrink-0" />

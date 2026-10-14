@@ -9,46 +9,46 @@ export default function HomePage({ setActivePage, onOpenEvidence }) {
 
   const proofExamples = [
     {
-      id: 'PROOF-01',
-      title: 'Real Project Proof',
+      id: 'SAMPLE-01',
+      title: 'Web Application & Systems',
       type: 'Code & Architecture',
       status: 'verified',
-      relationship: 'Direct Engineering Manager',
+      relationship: 'Engineering Manager',
       date: '2026-09-20',
-      scope: 'Verified live code contribution and architecture proof.',
+      scope: 'Confirmed production code contribution and architecture.',
       url: 'https://github.com',
       cardClass: 'dossier-card-yellow'
     },
     {
-      id: 'PROOF-02',
-      title: 'Real Certificate Proof',
-      type: 'ISO Audit & Qualification',
+      id: 'SAMPLE-02',
+      title: 'ISO Quality Certificate',
+      type: 'Quality Management',
       status: 'verified',
-      relationship: 'Certified Audit Authority',
+      relationship: 'Accredited Auditor',
       date: '2026-07-01',
-      scope: 'Verified active certificate audit compliance.',
+      scope: 'Verified active audit compliance certificate.',
       url: 'https://example.com',
       cardClass: 'dossier-card-mint'
     },
     {
-      id: 'PROOF-03',
-      title: 'Real Work Sample Proof',
-      type: 'Production & Output',
+      id: 'SAMPLE-03',
+      title: 'Client Project Delivery',
+      type: 'Design & Development',
       status: 'verified',
-      relationship: 'Client Verification',
+      relationship: 'Verified Client',
       date: '2026-08-15',
-      scope: 'Verified work sample output precision and quality.',
+      scope: 'Confirmed client deliverable quality and on-time delivery.',
       url: 'https://example.com',
       cardClass: 'dossier-card-pink'
     },
     {
-      id: 'PROOF-04',
-      title: 'Real Credential Proof',
-      type: 'Professional Registration',
+      id: 'SAMPLE-04',
+      title: 'Professional License',
+      type: 'Official Registration',
       status: 'verified',
-      relationship: 'Issuing Registry',
+      relationship: 'Licensing Registry',
       date: '2026-09-12',
-      scope: 'Verified professional registration and active license credential.',
+      scope: 'Verified active professional credentials and registration.',
       url: 'https://example.com',
       cardClass: 'dossier-card-peach'
     }
@@ -102,35 +102,35 @@ export default function HomePage({ setActivePage, onOpenEvidence }) {
               className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-white hover:bg-slate-100 text-slate-900 font-bold text-base border-2 border-slate-900 shadow-[5px_5px_0px_0px_#0f172a] hover:translate-y-[-2px] transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               <Eye className="w-4 h-4 text-slate-900" />
-              <span>See an example</span>
+              <span>Explore community profiles</span>
             </button>
           </motion.div>
 
         </div>
 
-        {/* HERO PROOF DOSSIER DISPLAY */}
+        {/* HERO PROOF DISPLAY */}
         <motion.div 
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
           className="mt-16 max-w-4xl mx-auto relative pt-4 pb-4"
         >
-          {/* MAIN BIG CARTOON DOSSIER DISPLAY */}
+          {/* MAIN BIG CARTOON CARD DISPLAY */}
           <div className="dossier-card-yellow rounded-3xl p-8 sm:p-12 border-3 border-slate-900 shadow-[8px_8px_0px_0px_#0f172a] text-center relative overflow-hidden">
             
             {/* Binder clip */}
             <div className="dossier-clip">
               <Paperclip className="w-3.5 h-3.5 text-amber-300" />
-              <span>BACKED PROOF PAGE</span>
+              <span>BACKED PROFILE PAGE</span>
             </div>
 
-            {/* Big Cartoon Character Center Image (Reading Red Proof Book) */}
+            {/* Big Cartoon Character Center Image */}
             <div className="max-w-md mx-auto space-y-4 pt-2">
               <div className="w-36 h-36 mx-auto rounded-3xl bg-white border-3 border-slate-900 p-2 shadow-[5px_5px_0px_0px_#0f172a] overflow-hidden">
                 <img src="/avatar_hero.png" alt="Big Cartoon Hero Character" className="w-full h-full object-cover rounded-2xl" />
               </div>
               <div className="space-y-1">
-                <span className="dossier-stamp">★ PROVENANCE VERIFIED ★</span>
+                <span className="dossier-stamp">★ REAL VERIFIED PROOF ★</span>
                 <h3 className="text-2xl font-black text-slate-900 pt-2">One Page People Actually Trust</h3>
                 <p className="text-xs font-bold text-slate-800">
                   Backed by real proof, not just words.
@@ -143,13 +143,13 @@ export default function HomePage({ setActivePage, onOpenEvidence }) {
 
       </section>
 
-      {/* 2. HOW IT WORKS (3-STEP STRIP) */}
+      {/* 2. HOW IT WORKS (3 SIMPLE STEPS) */}
       <section id="how-it-works" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 scroll-mt-28">
         
         <div className="text-center max-w-3xl mx-auto mb-12 space-y-3">
-          <span className="dossier-stamp">3-STEP STRIP</span>
+          <span className="dossier-stamp">HOW IT WORKS</span>
           <h2 className="text-4xl font-black text-slate-900">
-            How It Works
+            Three Simple Steps
           </h2>
         </div>
 
@@ -159,7 +159,7 @@ export default function HomePage({ setActivePage, onOpenEvidence }) {
           <div className="dossier-card-yellow p-8 flex flex-col justify-between">
             <div className="dossier-clip">
               <Paperclip className="w-3.5 h-3.5 text-slate-900" />
-              <span>STEP 1</span>
+              <span>STEP 1: ADD WHAT YOU DO</span>
             </div>
             <div className="space-y-4 pt-2">
               <span className="dossier-pill-bio">1. Add what you do</span>
@@ -173,7 +173,7 @@ export default function HomePage({ setActivePage, onOpenEvidence }) {
           <div className="dossier-card-mint p-8 flex flex-col justify-between">
             <div className="dossier-clip">
               <Paperclip className="w-3.5 h-3.5 text-slate-900" />
-              <span>STEP 2</span>
+              <span>STEP 2: ADD PROOF</span>
             </div>
             <div className="space-y-4 pt-2">
               <span className="dossier-pill-about">2. Back it up</span>
@@ -187,7 +187,7 @@ export default function HomePage({ setActivePage, onOpenEvidence }) {
           <div className="dossier-card-blue p-8 flex flex-col justify-between">
             <div className="dossier-clip">
               <Paperclip className="w-3.5 h-3.5 text-slate-900" />
-              <span>STEP 3</span>
+              <span>STEP 3: SHARE YOUR LINK</span>
             </div>
             <div className="space-y-4 pt-2">
               <span className="dossier-pill-proof">3. Share one link</span>
@@ -201,16 +201,16 @@ export default function HomePage({ setActivePage, onOpenEvidence }) {
 
       </section>
 
-      {/* 3. PERSON CARD / BUSINESS CARD SPLIT */}
+      {/* 3. INDIVIDUAL / BUSINESS SPLIT */}
       <section id="for-business" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 scroll-mt-28">
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           
-          {/* PERSON CARD */}
+          {/* INDIVIDUAL PROFILE */}
           <div className="dossier-card-pink p-8 sm:p-10 flex flex-col justify-between">
             <div className="dossier-clip">
               <Paperclip className="w-3.5 h-3.5 text-slate-900" />
-              <span>PERSON CARD</span>
+              <span>INDIVIDUAL PROFILE</span>
             </div>
 
             <div className="space-y-6 pt-2">
@@ -233,11 +233,11 @@ export default function HomePage({ setActivePage, onOpenEvidence }) {
             </div>
           </div>
 
-          {/* BUSINESS CARD */}
+          {/* BUSINESS PROFILE */}
           <div className="dossier-card-peach p-8 sm:p-10 flex flex-col justify-between">
             <div className="dossier-clip">
               <Paperclip className="w-3.5 h-3.5 text-slate-900" />
-              <span>BUSINESS CARD</span>
+              <span>BUSINESS PROFILE</span>
             </div>
 
             <div className="space-y-6 pt-2">
@@ -268,9 +268,9 @@ export default function HomePage({ setActivePage, onOpenEvidence }) {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         <div className="text-center max-w-3xl mx-auto mb-12 space-y-3">
-          <span className="dossier-stamp">PROOF EXAMPLES</span>
+          <span className="dossier-stamp">REAL WORK SAMPLES</span>
           <h2 className="text-4xl font-black text-slate-900">
-            Real Proof Examples
+            Work Samples & Proof
           </h2>
         </div>
 
@@ -293,7 +293,7 @@ export default function HomePage({ setActivePage, onOpenEvidence }) {
               </div>
 
               <div className="pt-4 border-t-2 border-slate-900/40 flex items-center justify-between text-xs text-slate-900 font-mono font-black">
-                <span>INSPECT PROOF</span>
+                <span>VIEW DETAILS</span>
                 <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </div>
             </div>
@@ -302,11 +302,11 @@ export default function HomePage({ setActivePage, onOpenEvidence }) {
 
       </section>
 
-      {/* 5. TRUST STRIP */}
+      {/* 5. TRUST BANNER */}
       <section className="border-y-3 border-slate-900 bg-[#bae6fd] py-16">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-4">
           <span className="dossier-stamp bg-white text-slate-900 border-slate-900 font-mono">
-            TRUST STRIP
+            SIMPLE & TRUSTED
           </span>
           <h2 className="text-3xl sm:text-5xl font-black text-slate-900 tracking-tight leading-tight">
             Every claim can be backed. Every proof can be checked.
@@ -314,13 +314,13 @@ export default function HomePage({ setActivePage, onOpenEvidence }) {
         </div>
       </section>
 
-      {/* 6. CLOSING CTA BAND */}
+      {/* 6. CLOSING CTA BANNER */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="dossier-card-yellow rounded-3xl p-8 sm:p-14 border-3 border-slate-900 relative overflow-hidden text-center space-y-6 shadow-[8px_8px_0px_0px_#0f172a]">
           
           <div className="dossier-clip">
             <Paperclip className="w-3.5 h-3.5 text-slate-900" />
-            <span>CLOSING BAND</span>
+            <span>GET STARTED TODAY</span>
           </div>
 
           <h2 className="text-3xl sm:text-5xl font-black text-slate-900 tracking-tight pt-2">

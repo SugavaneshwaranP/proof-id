@@ -119,6 +119,8 @@ export const authService = {
       profileType: user.user_metadata?.profile_type || profileType,
       slug: user.user_metadata?.slug || cleanSlug,
       createdAt: user.created_at,
+      hasSession: Boolean(data.session),
+      needsEmailConfirmation: !data.session && !data.user?.confirmed_at,
     };
   },
 

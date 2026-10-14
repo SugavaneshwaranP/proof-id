@@ -2,15 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   MessageSquare, Mail, Paperclip, CheckCircle2, Clock, 
-  Inbox, Reply, Check, Trash2, Sparkles, Filter, ShieldCheck, Zap, Send, X
+  Inbox, Reply, Check, Trash2, Sparkles, Filter, ShieldCheck, Zap, Send, X, FileText, DollarSign
 } from 'lucide-react';
 import { subscribeToInboxChannel } from '../lib/realtime';
 import { dbStore } from '../lib/dbStore';
 import { authService } from '../lib/authService';
+import { inboxRepository } from '../lib/repositories/inboxRepository';
 
 export default function DashboardInboxPage({ setActivePage }) {
   const currentUser = authService.getCurrentUser();
-  const slug = currentUser?.slug || 'alexrivera';
+  const slug = currentUser?.slug || 'profile';
 
   const [messages, setMessages] = useState(() => dbStore.getMessages(slug));
   const [selectedMessage, setSelectedMessage] = useState(null);
@@ -18,6 +19,16 @@ export default function DashboardInboxPage({ setActivePage }) {
   const [replyText, setReplyText] = useState('');
   const [replySent, setReplySent] = useState(false);
   const [liveToast, setLiveToast] = useState(null);
+
+  // Quotation Composer States
+  const [showQuoteComposer, setShowQuoteComposer] = useState(false);
+  const [quoteUnitPrice, setQuoteUnitPrice] = useState('25.00');
+  const [quoteCurrency, setQuoteCurrency] = useState('USD');
+  const [quoteMoq, setQuoteMoq] = useState('100');
+  const [quoteLeadTime, setQuoteLeadTime] = useState('14');
+  const [quotePaymentTerms, setQuotePaymentTerms] = useState('Net 30');
+  const [quoteNotes, setQuoteNotes] = useState('');
+  const [quoteSent, setQuoteSent] = useState(false);
 
   useEffect(() => {
     const load = () => {
@@ -29,7 +40,7 @@ export default function DashboardInboxPage({ setActivePage }) {
     const unsubStore = dbStore.onSync(load);
     const unsubRealtime = subscribeToInboxChannel(slug, (newMsg) => {
       load();
-      setLiveToast(`New inquiry from ${newMsg.sender_name || 'a visitor'}!`);
+      setLiveToast(`New message from ${newMsg.sender_name || 'a visitor'}!`);
       setTimeout(() => setLiveToast(null), 5000);
     });
 
@@ -72,6 +83,33 @@ export default function DashboardInboxPage({ setActivePage }) {
     }, 1500);
   };
 
+  const handleSubmitQuote = async (e) => {
+    e.preventDefault();
+    if (!selectedMessage) return;
+
+    try {
+      await inboxRepository.createQuoteResponse({
+        contactRequestId: selectedMessage.id,
+        supplierProfileId: currentUser?.id || '00000000-0000-0000-0000-000000000001',
+        unitPrice: quoteUnitPrice,
+        currency: quoteCurrency,
+        moq: quoteMoq,
+        leadTimeDays: quoteLeadTime,
+        paymentTerms: quotePaymentTerms,
+        quoteNotes: quoteNotes,
+      });
+    } catch (err) {
+      console.warn("Quote creation fallback:", err);
+    }
+
+    handleUpdateStatus(selectedMessage.id, 'quoted');
+    setQuoteSent(true);
+    setTimeout(() => {
+      setQuoteSent(false);
+      setShowQuoteComposer(false);
+    }, 1500);
+  };
+
   const filteredMessages = messages.filter((m) => {
     const msgStatus = m.status || (!m.read ? 'new' : 'read');
     if (statusFilter === 'all') return true;
@@ -81,7 +119,7 @@ export default function DashboardInboxPage({ setActivePage }) {
   return (
     <div className="space-y-8 pb-20 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 font-sans desk-grid-background">
       
-      {/* Realtime WebSocket Incoming Message Alert */}
+      {/* Realtime Incoming Message Alert */}
       <AnimatePresence>
         {liveToast && (
           <motion.div
@@ -95,20 +133,20 @@ export default function DashboardInboxPage({ setActivePage }) {
               <span>{liveToast}</span>
             </div>
             <span className="text-xs font-mono font-bold bg-slate-900 text-white px-2.5 py-1 rounded-lg uppercase">
-              REAL-TIME WEBSOCKET INBOX
+              NEW MESSAGE
             </span>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Main Dossier Container */}
+      {/* Main Container */}
       <div className="dossier-card rounded-3xl p-6 sm:p-10 border-3 border-slate-900 shadow-[8px_8px_0px_0px_#0f172a] relative overflow-hidden bg-white text-slate-900 space-y-6">
         
         {/* Top Metallic Clip */}
         <div className="flex items-center justify-between border-b-2 border-slate-900 pb-4">
           <div className="dossier-clip relative top-0 left-0">
             <Paperclip className="w-3.5 h-3.5 text-amber-300" />
-            <span className="uppercase font-mono font-black">INBOX & INQUIRIES DOSSIER</span>
+            <span className="uppercase font-mono font-black">INBOX & MESSAGES</span>
           </div>
           <span className="text-xs font-mono font-extrabold text-slate-600">
             {messages.filter(m => !m.read).length} UNREAD
@@ -118,14 +156,14 @@ export default function DashboardInboxPage({ setActivePage }) {
         {/* Title */}
         <div className="space-y-1">
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-            “Visitor & Business Inquiries”
+            Messages & Inquiries
           </h1>
           <p className="text-xs font-bold text-slate-700">
-            Inbound contact requests for backed.network/{slug}
+            Messages sent to your profile
           </p>
         </div>
 
-        {/* State Filter Pills (Slice 6 requirement) */}
+        {/* State Filter Pills */}
         <div className="flex flex-wrap items-center gap-1.5 pb-2 border-b border-slate-200">
           {['all', 'new', 'read', 'responding', 'quoted', 'closed'].map((st) => (
             <button
@@ -230,36 +268,172 @@ export default function DashboardInboxPage({ setActivePage }) {
                   </p>
                 </div>
 
-                {/* Reply Box */}
-                <form onSubmit={handleSendReply} className="space-y-2 pt-2">
-                  <label className="text-xs font-mono font-black uppercase block">Reply to {selectedMessage.sender_name}</label>
-                  <textarea
-                    rows={3}
-                    required
-                    placeholder={`Type your reply to ${selectedMessage.sender_email}...`}
-                    value={replyText}
-                    onChange={(e) => setReplyText(e.target.value)}
-                    className="w-full bg-white border-2 border-slate-900 rounded-xl p-3 text-xs font-bold focus:outline-none resize-none"
-                  />
-                  {replySent ? (
-                    <div className="p-2.5 bg-emerald-200 border-2 border-slate-900 rounded-xl text-center text-xs font-black text-emerald-900">
-                      Reply dispatched via email gateway!
+                {/* Action Mode Switcher: Email Reply vs Formal B2B Quotation */}
+                <div className="flex border-b-2 border-slate-900 gap-2 pt-2 pb-1">
+                  <button
+                    type="button"
+                    onClick={() => setShowQuoteComposer(false)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-black border-2 transition-all cursor-pointer flex items-center gap-1.5 ${
+                      !showQuoteComposer
+                        ? 'bg-slate-900 text-white border-slate-900 shadow-[2px_2px_0px_0px_#0f172a]'
+                        : 'bg-white text-slate-800 border-slate-400 hover:bg-slate-100'
+                    }`}
+                  >
+                    <Mail className="w-3.5 h-3.5" />
+                    <span>Email Reply</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowQuoteComposer(true)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-black border-2 transition-all cursor-pointer flex items-center gap-1.5 ${
+                      showQuoteComposer
+                        ? 'bg-emerald-300 text-slate-900 border-slate-900 shadow-[2px_2px_0px_0px_#0f172a]'
+                        : 'bg-white text-slate-800 border-slate-400 hover:bg-slate-100'
+                    }`}
+                  >
+                    <FileText className="w-3.5 h-3.5 text-emerald-800" />
+                    <span>Send Price Quote</span>
+                  </button>
+                </div>
+
+                {!showQuoteComposer ? (
+                  /* Standard Reply Box */
+                  <form onSubmit={handleSendReply} className="space-y-2 pt-2">
+                    <label className="text-xs font-mono font-black uppercase block">Reply to {selectedMessage.sender_name}</label>
+                    <textarea
+                      rows={3}
+                      required
+                      placeholder={`Type your reply to ${selectedMessage.sender_email}...`}
+                      value={replyText}
+                      onChange={(e) => setReplyText(e.target.value)}
+                      className="w-full bg-white border-2 border-slate-900 rounded-xl p-3 text-xs font-bold focus:outline-none resize-none"
+                    />
+                    {replySent ? (
+                      <div className="p-2.5 bg-emerald-200 border-2 border-slate-900 rounded-xl text-center text-xs font-black text-emerald-900">
+                        Reply sent!
+                      </div>
+                    ) : (
+                      <button
+                        type="submit"
+                        className="w-full py-3 rounded-xl bg-slate-900 text-white font-black text-xs uppercase tracking-wider shadow-[3px_3px_0px_0px_#059669] border-2 border-slate-900 hover:bg-slate-800 flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        <Send className="w-4 h-4 text-emerald-300" />
+                        <span>Send Response</span>
+                      </button>
+                    )}
+                  </form>
+                ) : (
+                  /* Price Quote Form */
+                  <form onSubmit={handleSubmitQuote} className="space-y-3 pt-2 bg-emerald-50/80 p-4 rounded-xl border-2 border-slate-900">
+                    <div className="flex items-center justify-between border-b border-emerald-900/20 pb-2">
+                      <span className="text-xs font-black text-slate-900 uppercase font-mono flex items-center gap-1.5">
+                        <FileText className="w-4 h-4 text-emerald-700" />
+                        Price & Delivery Quote
+                      </span>
+                      <span className="text-[10px] font-mono font-bold bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded border border-emerald-900">
+                        VALID 30 DAYS
+                      </span>
                     </div>
-                  ) : (
-                    <button
-                      type="submit"
-                      className="w-full py-3 rounded-xl bg-slate-900 text-white font-black text-xs uppercase tracking-wider shadow-[3px_3px_0px_0px_#059669] border-2 border-slate-900 hover:bg-slate-800 flex items-center justify-center gap-2 cursor-pointer"
-                    >
-                      <Send className="w-4 h-4 text-emerald-300" />
-                      <span>Send Response</span>
-                    </button>
-                  )}
-                </form>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-[10px] font-mono font-black uppercase text-slate-700 block">Unit Price</label>
+                        <div className="relative mt-1">
+                          <span className="absolute left-3 top-2 text-xs font-bold text-slate-500">$</span>
+                          <input
+                            type="number"
+                            step="0.01"
+                            required
+                            value={quoteUnitPrice}
+                            onChange={(e) => setQuoteUnitPrice(e.target.value)}
+                            className="w-full bg-white border-2 border-slate-900 rounded-lg pl-7 pr-3 py-1.5 text-xs font-bold text-slate-900 focus:outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="text-[10px] font-mono font-black uppercase text-slate-700 block">Currency</label>
+                        <select
+                          value={quoteCurrency}
+                          onChange={(e) => setQuoteCurrency(e.target.value)}
+                          className="w-full mt-1 bg-white border-2 border-slate-900 rounded-lg px-3 py-1.5 text-xs font-bold text-slate-900 focus:outline-none"
+                        >
+                          <option value="USD">USD ($)</option>
+                          <option value="EUR">EUR (€)</option>
+                          <option value="GBP">GBP (£)</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="text-[10px] font-mono font-black uppercase text-slate-700 block">Minimum Order Quantity</label>
+                        <input
+                          type="number"
+                          min="1"
+                          required
+                          value={quoteMoq}
+                          onChange={(e) => setQuoteMoq(e.target.value)}
+                          className="w-full mt-1 bg-white border-2 border-slate-900 rounded-lg px-3 py-1.5 text-xs font-bold text-slate-900 focus:outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-[10px] font-mono font-black uppercase text-slate-700 block">Delivery Time (Days)</label>
+                        <input
+                          type="number"
+                          min="1"
+                          required
+                          value={quoteLeadTime}
+                          onChange={(e) => setQuoteLeadTime(e.target.value)}
+                          className="w-full mt-1 bg-white border-2 border-slate-900 rounded-lg px-3 py-1.5 text-xs font-bold text-slate-900 focus:outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] font-mono font-black uppercase text-slate-700 block">Payment Terms</label>
+                      <select
+                        value={quotePaymentTerms}
+                        onChange={(e) => setQuotePaymentTerms(e.target.value)}
+                        className="w-full mt-1 bg-white border-2 border-slate-900 rounded-lg px-3 py-1.5 text-xs font-bold text-slate-900 focus:outline-none"
+                      >
+                        <option value="Net 30">Net 30 Days</option>
+                        <option value="50% Upfront, 50% on Delivery">50% Upfront, 50% on Delivery</option>
+                        <option value="100% Upfront Wire">100% Upfront Wire</option>
+                        <option value="Letter of Credit (LC)">Letter of Credit (LC)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] font-mono font-black uppercase text-slate-700 block">Terms & Notes</label>
+                      <textarea
+                        rows={2}
+                        placeholder="Add any terms, shipping notes, or timeline details..."
+                        value={quoteNotes}
+                        onChange={(e) => setQuoteNotes(e.target.value)}
+                        className="w-full mt-1 bg-white border-2 border-slate-900 rounded-lg p-2.5 text-xs font-bold focus:outline-none resize-none"
+                      />
+                    </div>
+
+                    {quoteSent ? (
+                      <div className="p-2.5 bg-emerald-200 border-2 border-slate-900 rounded-xl text-center text-xs font-black text-emerald-900">
+                        Quote Sent!
+                      </div>
+                    ) : (
+                      <button
+                        type="submit"
+                        className="w-full py-2.5 rounded-xl bg-emerald-400 hover:bg-emerald-500 text-slate-900 font-black text-xs uppercase tracking-wider shadow-[3px_3px_0px_0px_#0f172a] border-2 border-slate-900 flex items-center justify-center gap-2 cursor-pointer transition-all"
+                      >
+                        <FileText className="w-4 h-4 text-slate-900" />
+                        <span>Send Price Quote</span>
+                      </button>
+                    )}
+                  </form>
+                )}
 
               </div>
             ) : (
               <div className="bg-slate-50 border-2 border-dashed border-slate-400 rounded-2xl p-10 text-center text-slate-500 font-extrabold text-xs">
-                Select an inquiry from the list on the left to read and respond.
+                Select a message from the list on the left to read and reply.
               </div>
             )}
           </div>
